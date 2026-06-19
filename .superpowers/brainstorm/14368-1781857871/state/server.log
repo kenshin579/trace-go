@@ -1,0 +1,5 @@
+{"type":"server-started","port":64160,"host":"127.0.0.1","url_host":"localhost","url":"http://localhost:64160","screen_dir":"/Users/user/GolandProjects/trace-go/.superpowers/brainstorm/14368-1781857871/content","state_dir":"/Users/user/GolandProjects/trace-go/.superpowers/brainstorm/14368-1781857871/state"}
+{"type":"screen-added","file":"/Users/user/GolandProjects/trace-go/.superpowers/brainstorm/14368-1781857871/content/viz-style.html"}
+{"source":"user-event","type":"click","text":"◀ scrub time ▶\n        \n        현재 시점 t=135 상태\n        \n        \n        \n        G1\n        G2⏸\n        G3\n      \n    \n    \n      C. 하이브리드 (타임라인 + 재생되는 라이브 뷰)\n      위: 타임라인 스크러버(전체 조망 + 시간 이동). 아래: 그 시점의 goroutine/channel 상태를 그래프로. 스크럽하면 아래가 애니메이션. 학습자·실무자 둘 다 커버하지만 구현량 가장 큼.","choice":"c","id":null,"timestamp":1781859908405}
+{"type":"screen-added","file":"/Users/user/GolandProjects/trace-go/.superpowers/brainstorm/14368-1781857871/content/waiting.html"}
+{"type":"server-stopped","reason":"idle timeout"}
