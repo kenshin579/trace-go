@@ -9,12 +9,27 @@ export interface Interval {
   blockReason?: string
 }
 
+export interface Region {
+  start: number
+  end: number
+  name: string
+  depth: number
+}
+
+export interface Log {
+  time: number
+  goId: number
+  category: string
+  message: string
+}
+
 export interface Goroutine {
   id: number
   name: string
   createdAt: number
   endedAt: number
   intervals: Interval[]
+  regions?: Region[]
 }
 
 export type EdgeCategory = 'channel' | 'mutex' | 'other'
@@ -31,4 +46,5 @@ export interface TraceSummary {
   endTime: number
   goroutines: Goroutine[]
   edges: CausalEdge[]
+  logs?: Log[]
 }
