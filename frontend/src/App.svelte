@@ -5,6 +5,7 @@
   import TimelineCanvas from './components/TimelineCanvas.svelte'
   import Controls from './components/Controls.svelte'
   import GraphCanvas from './components/GraphCanvas.svelte'
+  import Legend from './components/Legend.svelte'
 
   const { summary } = traceStore
   let error = ''
@@ -55,6 +56,7 @@
   {:else}
     <section class="empty">Open a Go execution trace (.out) to begin.</section>
   {/if}
+  {#if $summary}<Legend />{/if}
 </main>
 
 <style>
