@@ -3,6 +3,7 @@
   import { traceStore } from './stores/trace'
   import type { TraceSummary } from './lib/types'
   import TimelineCanvas from './components/TimelineCanvas.svelte'
+  import Controls from './components/Controls.svelte'
 
   const { summary } = traceStore
   let error = ''
@@ -20,7 +21,19 @@
       loading = false
     }
   }
+
+  function onKeydown(e: KeyboardEvent) {
+    if (e.code !== 'Space' || !$summary) return
+    // If a control (button/select/checkbox) is focused, let its native Space
+    // activation handle it — otherwise both fire and the toggle cancels out.
+    const tag = (e.target as HTMLElement).tagName
+    if (tag === 'BUTTON' || tag === 'SELECT' || tag === 'INPUT' || tag === 'TEXTAREA') return
+    e.preventDefault()
+    traceStore.toggle()
+  }
 </script>
+
+<svelte:window on:keydown={onKeydown} />
 
 <main>
   <header>
@@ -30,6 +43,7 @@
         {$summary.goroutines.length} goroutines · {$summary.edges.length} edges ·
         {(($summary.endTime - $summary.startTime) / 1e6).toFixed(1)} ms
       </span>
+      <Controls />
     {/if}
     {#if error}<span class="error">{error}</span>{/if}
   </header>

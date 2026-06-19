@@ -3,8 +3,9 @@
   import { traceStore } from '../stores/trace'
   import { layoutTimeline, type Lane } from '../lib/timelineLayout'
   import { makeTimeScale } from '../lib/timeMap'
+  import { visibleGoroutines } from '../lib/filter'
 
-  const { summary, playhead, setPlayhead } = traceStore
+  const { summary, playhead, showSystem, setPlayhead } = traceStore
 
   let container: HTMLDivElement
   let canvas: HTMLCanvasElement
@@ -17,12 +18,14 @@
   // Layout and height are derived reactively from the loaded summary and the
   // current width. Using $summary/$playhead auto-subscriptions means Svelte
   // owns subscription lifecycle (no manual leak).
+  $: visible = $summary ? visibleGoroutines($summary, $showSystem) : []
   $: lanes = $summary
-    ? layoutTimeline($summary, { width: cssWidth, laneHeight: LANE_H, laneGap: LANE_GAP })
+    ? layoutTimeline(
+        { ...$summary, goroutines: visible },
+        { width: cssWidth, laneHeight: LANE_H, laneGap: LANE_GAP },
+      )
     : ([] as Lane[])
-  $: cssHeight = $summary
-    ? Math.max(400, $summary.goroutines.length * (LANE_H + LANE_GAP))
-    : 400
+  $: cssHeight = Math.max(400, visible.length * (LANE_H + LANE_GAP))
 
   // Redraw whenever any input to the picture changes. draw() no-ops until the
   // canvas is mounted; onMount triggers the first real paint.
