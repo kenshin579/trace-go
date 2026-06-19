@@ -108,3 +108,45 @@ func TestParseAssignsNamesToRunningGoroutines(t *testing.T) {
 		t.Fatal("expected at least one running goroutine to have a name")
 	}
 }
+
+func TestParseRegionsAndLogs(t *testing.T) {
+	r := genTrace(t, scenarioRegionsLogs)
+	sum, err := parse.Parse(r)
+	if err != nil {
+		t.Fatalf("Parse: %v", err)
+	}
+
+	// Find the goroutine that has regions and assert nesting.
+	var outer, inner *model.Region
+	for gi := range sum.Goroutines {
+		for ri := range sum.Goroutines[gi].Regions {
+			reg := &sum.Goroutines[gi].Regions[ri]
+			switch reg.Name {
+			case "outer":
+				outer = reg
+			case "inner":
+				inner = reg
+			}
+		}
+	}
+	if outer == nil || inner == nil {
+		t.Fatalf("expected 'outer' and 'inner' regions, got %+v", sum.Goroutines)
+	}
+	if inner.Depth <= outer.Depth {
+		t.Fatalf("expected inner deeper than outer: outer=%d inner=%d", outer.Depth, inner.Depth)
+	}
+	if outer.End < outer.Start || inner.End < inner.Start {
+		t.Fatalf("region end before start: outer=%+v inner=%+v", outer, inner)
+	}
+
+	cats := map[string]bool{}
+	for _, lg := range sum.Logs {
+		cats[lg.Category] = true
+		if lg.Message == "" {
+			t.Fatalf("log missing message: %+v", lg)
+		}
+	}
+	if !cats["startup"] || !cats["work"] {
+		t.Fatalf("expected 'startup' and 'work' log categories, got %+v", sum.Logs)
+	}
+}
