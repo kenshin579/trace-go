@@ -12,7 +12,7 @@
   import { visibleGoroutines } from '../lib/filter'
   import { buildGraphModel, type GraphNode, type GraphLink } from '../lib/graphModel'
   import { stateAt, activeEdges } from '../lib/activeAt'
-  import { stateColor } from '../lib/format'
+  import { stateColor, DIM_COLOR, EDGE_ACTIVE_COLOR } from '../lib/format'
   import type { Goroutine, CausalEdge } from '../lib/types'
 
   const { summary, playhead, showSystem, selectedId } = traceStore
@@ -76,7 +76,7 @@
       const tg = l.target as unknown as GraphNode
       if (s.x == null || tg.x == null) continue
       const isActive = active.has(`${s.id}->${tg.id}`)
-      ctx.strokeStyle = isActive ? '#5b8def' : '#2a2e38'
+      ctx.strokeStyle = isActive ? EDGE_ACTIVE_COLOR : DIM_COLOR
       ctx.lineWidth = isActive ? 2.5 : 1
       ctx.beginPath()
       ctx.moveTo(s.x, s.y!)
@@ -89,7 +89,7 @@
       if (n.x == null) continue
       const g = goroutineById.get(n.id)
       const st = g ? stateAt(g, t) : null
-      ctx.fillStyle = st ? stateColor(st) : '#2a2e38' // dim if not alive at t
+      ctx.fillStyle = st ? stateColor(st) : DIM_COLOR // dim if not alive at t
       ctx.beginPath()
       ctx.arc(n.x, n.y!, 9, 0, Math.PI * 2)
       ctx.fill()

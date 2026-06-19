@@ -22,3 +22,7 @@ const STATE_COLORS: Record<IntervalState, string> = {
 export function stateColor(state: IntervalState): string {
   return STATE_COLORS[state] ?? '#5b6270'
 }
+
+// Shared graph colors (kept here so the graph renderer and the legend can't drift).
+export const DIM_COLOR = '#2a2e38' // node not alive at the current time / inactive edge
+export const EDGE_ACTIVE_COLOR = '#5b8def' // edge firing near the playhead
