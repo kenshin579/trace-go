@@ -1,0 +1,85 @@
+<h2>두 가지 "줌"의 차이 (실제로 움직입니다)</h2>
+<p class="subtitle">왼쪽 = 그래프 공간 줌(A) · 오른쪽 = 타임라인 시간 줌(B). 어느 쪽을 할지 보고 정하세요.</p>
+
+<style>
+  .zoom-demo { display:flex; gap:18px; flex-wrap:wrap; }
+  .zoom-panel { flex:1; min-width:280px; }
+  .viewport { background:#0f1117; border:1px solid #2a2e38; border-radius:8px; height:200px; overflow:hidden; position:relative; }
+  .cap { font-size:13px; color:#8a93a3; margin-top:8px; }
+  .cap b { color:#cdd3df; }
+
+  /* A: graph spatial zoom — scale the whole picture toward a cluster, like a map */
+  .graph-scene { width:100%; height:100%; transform-origin:64% 40%;
+    animation: graphZoom 5s ease-in-out infinite; }
+  @keyframes graphZoom {
+    0%,15%   { transform: scale(1); }
+    50%,65%  { transform: scale(2.4); }
+    100%     { transform: scale(1); }
+  }
+
+  /* B: timeline time zoom — stretch the time axis into a narrow window */
+  .time-scene { width:100%; height:100%; transform-origin:30% 50%;
+    animation: timeZoom 5s ease-in-out infinite; }
+  @keyframes timeZoom {
+    0%,15%   { transform: scaleX(1); }
+    50%,65%  { transform: scaleX(4.5); }
+    100%     { transform: scaleX(1); }
+  }
+  /* the window marker that highlights the region being zoomed (B) */
+  .time-window { position:absolute; top:6px; bottom:6px; left:24%; width:14%;
+    border:1.5px dashed #5b8def; border-radius:3px;
+    animation: winFade 5s ease-in-out infinite; }
+  @keyframes winFade { 0%,15%{opacity:1} 45%{opacity:0} 100%{opacity:0} }
+</style>
+
+<div class="zoom-demo">
+
+  <!-- A: graph spatial zoom -->
+  <div class="zoom-panel">
+    <div class="viewport">
+      <svg class="graph-scene" viewBox="0 0 300 200">
+        <line x1="150" y1="80" x2="210" y2="60" stroke="#2a2e38" stroke-width="2"/>
+        <line x1="210" y1="60" x2="240" y2="95" stroke="#2a2e38" stroke-width="2"/>
+        <line x1="210" y1="60" x2="200" y2="110" stroke="#2a2e38" stroke-width="2"/>
+        <line x1="150" y1="80" x2="90" y2="120" stroke="#2a2e38" stroke-width="2"/>
+        <line x1="150" y1="80" x2="70" y2="60" stroke="#2a2e38" stroke-width="2"/>
+        <circle cx="150" cy="80" r="11" fill="#4caf50"/>
+        <circle cx="210" cy="60" r="11" fill="#c25450"/>
+        <circle cx="240" cy="95" r="11" fill="#9aa3b2"/>
+        <circle cx="200" cy="110" r="11" fill="#4caf50"/>
+        <circle cx="90" cy="120" r="11" fill="#c25450"/>
+        <circle cx="70" cy="60" r="11" fill="#4caf50"/>
+      </svg>
+    </div>
+    <p class="cap"><b>A. 그래프 공간 줌</b> — 지도처럼 <b>그림을 확대/이동</b>. 빽빽한 노드 무리에 가까이. 시간과 무관, 데이터·배치 그대로.</p>
+  </div>
+
+  <!-- B: timeline time zoom -->
+  <div class="zoom-panel">
+    <div class="viewport">
+      <svg class="time-scene" viewBox="0 0 300 200" preserveAspectRatio="none">
+        <rect x="0" y="24"  width="300" height="16" rx="2" fill="#4caf50"/>
+        <rect x="70" y="24" width="120" height="16" rx="2" fill="#c25450"/>
+        <rect x="0" y="52"  width="300" height="16" rx="2" fill="#c25450"/>
+        <rect x="0" y="80"  width="300" height="16" rx="2" fill="#9aa3b2"/>
+        <rect x="0" y="108" width="300" height="16" rx="2" fill="#4caf50"/>
+        <rect x="40" y="108" width="30" height="16" rx="2" fill="#c25450"/>
+        <rect x="0" y="136" width="300" height="16" rx="2" fill="#c25450"/>
+      </svg>
+      <div class="time-window"></div>
+    </div>
+    <p class="cap"><b>B. 타임라인 시간 줌</b> — <b>시간 구간을 좁혀</b> 확대(파란 창). 전체 1.4ms 중 짧은 순간을 펼쳐 세밀히. 시간축이 바뀜.</p>
+  </div>
+
+</div>
+
+<div class="options" style="margin-top:16px">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content"><h3>그래프 공간 줌</h3><p>이번 7번 작업 (자기완결적, 추천)</p></div>
+  </div>
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content"><h3>타임라인 시간 줌</h3><p>더 큰 별개 작업</p></div>
+  </div>
+</div>
