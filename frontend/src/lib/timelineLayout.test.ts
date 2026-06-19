@@ -66,3 +66,26 @@ describe('layoutTimeline', () => {
     expect(lanes[0].rects[0].width).toBeGreaterThanOrEqual(1)
   })
 })
+
+describe('layoutTimeline gutter', () => {
+  const summary = {
+    startTime: 0,
+    endTime: 100,
+    goroutines: [
+      { id: 1, name: 'a', createdAt: 0, endedAt: 100, intervals: [{ start: 0, end: 50, state: 'running', blockReason: '' }] },
+    ],
+    edges: [],
+  } as any
+
+  it('offsets the time axis to start at the gutter', () => {
+    const lanes = layoutTimeline(summary, { width: 200, laneHeight: 20, laneGap: 4, gutter: 50 })
+    // t=0 maps to x=gutter; t=50 (half of span 100) maps to gutter + half of (200-50)=125.
+    expect(lanes[0].rects[0].x).toBe(50)
+    expect(lanes[0].rects[0].width).toBeCloseTo(75)
+  })
+
+  it('defaults to no gutter when omitted', () => {
+    const lanes = layoutTimeline(summary, { width: 200, laneHeight: 20, laneGap: 4 })
+    expect(lanes[0].rects[0].x).toBe(0)
+  })
+})

@@ -22,13 +22,14 @@ export interface LayoutOptions {
   width: number // pixel width of the time axis
   laneHeight: number
   laneGap: number
+  gutter?: number // left offset reserved for lane labels; time axis starts here
 }
 
 // layoutTimeline maps the whole trace span onto [0, width] and produces one
 // lane per goroutine. Each interval becomes a rect with a minimum width of 1px
 // so sub-pixel intervals stay visible.
 export function layoutTimeline(summary: TraceSummary, opts: LayoutOptions): Lane[] {
-  const scale = makeTimeScale(summary.startTime, summary.endTime, 0, opts.width)
+  const scale = makeTimeScale(summary.startTime, summary.endTime, opts.gutter ?? 0, opts.width)
   return summary.goroutines.map((g, i) => {
     const rects: LayoutRect[] = g.intervals.map((iv) => {
       // The parser always sets a real Interval.End (a state-transition time, or
