@@ -3,6 +3,7 @@
   import { traceStore } from './stores/trace'
   import type { TraceSummary } from './lib/types'
   import TimelineCanvas from './components/TimelineCanvas.svelte'
+  import Controls from './components/Controls.svelte'
 
   const { summary } = traceStore
   let error = ''
@@ -20,7 +21,16 @@
       loading = false
     }
   }
+
+  function onKeydown(e: KeyboardEvent) {
+    if (e.code === 'Space' && $summary) {
+      e.preventDefault()
+      traceStore.toggle()
+    }
+  }
 </script>
+
+<svelte:window on:keydown={onKeydown} />
 
 <main>
   <header>
@@ -30,6 +40,7 @@
         {$summary.goroutines.length} goroutines · {$summary.edges.length} edges ·
         {(($summary.endTime - $summary.startTime) / 1e6).toFixed(1)} ms
       </span>
+      <Controls />
     {/if}
     {#if error}<span class="error">{error}</span>{/if}
   </header>
