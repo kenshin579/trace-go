@@ -1,2 +1,38 @@
-# IntelliJ IDEA / GoLand
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+coverage.txt
+
+# Dependency directories
+vendor/
+
+# Go workspace file
+go.work
+go.work.sum
+
+# Build output
+/bin/
+/dist/
+
+# Environment variables
+.env
+.env.local
+
+# IDE - IntelliJ IDEA / GoLand
 .idea/
+*.iml
+
+# IDE - VS Code
+.vscode/
+
+# macOS
+.DS_Store
