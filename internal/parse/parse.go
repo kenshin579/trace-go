@@ -179,8 +179,12 @@ func mapState(s exptrace.GoState, reason string) (model.State, string) {
 	case exptrace.GoWaiting:
 		return model.StateBlocked, reason
 	case exptrace.GoSyscall:
+		// The trace records a per-syscall reason, but we collapse all syscalls to
+		// a single "syscall" label so that the UI groups them consistently.
 		return model.StateBlocked, "syscall"
 	default:
+		// GoNotExist and any future GoStates added by the runtime are treated as
+		// Runnable so they never silently drop from the timeline.
 		return model.StateRunnable, ""
 	}
 }

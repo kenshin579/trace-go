@@ -35,3 +35,24 @@ func scenarioSendRecv() {
 	go func() { defer wg.Done(); <-ch }()
 	wg.Wait()
 }
+
+// scenarioMutexContention: many goroutines contend for a single mutex,
+// forcing some to block on sync.Mutex.Lock and be woken by the unlocker.
+func scenarioMutexContention() {
+	var mu sync.Mutex
+	var wg sync.WaitGroup
+	counter := 0
+	for i := 0; i < 8; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for j := 0; j < 50; j++ {
+				mu.Lock()
+				counter++
+				mu.Unlock()
+			}
+		}()
+	}
+	wg.Wait()
+	_ = counter
+}

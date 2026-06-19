@@ -60,6 +60,31 @@ func TestParseProducesChannelCausalEdge(t *testing.T) {
 	}
 }
 
+func TestParseMutexScenarioProducesBlockedIntervals(t *testing.T) {
+	r := genTrace(t, scenarioMutexContention)
+	sum, err := parse.Parse(r)
+	if err != nil {
+		t.Fatalf("Parse: %v", err)
+	}
+	blocked := 0
+	for _, g := range sum.Goroutines {
+		for _, iv := range g.Intervals {
+			if iv.State == model.StateBlocked {
+				blocked++
+			}
+		}
+	}
+	if blocked == 0 {
+		t.Fatal("expected at least one blocked interval under mutex contention")
+	}
+	// Any mutex-categorized edges that DID appear must be well-formed.
+	for _, e := range sum.Edges {
+		if e.From == e.To {
+			t.Fatalf("self edge: %+v", e)
+		}
+	}
+}
+
 func TestParseAssignsNamesToRunningGoroutines(t *testing.T) {
 	r := genTrace(t, scenarioSendRecv)
 	sum, err := parse.Parse(r)
