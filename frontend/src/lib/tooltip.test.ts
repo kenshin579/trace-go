@@ -29,3 +29,17 @@ describe('edgeTooltip', () => {
     expect(edgeTooltip('other', 'g1', 'g2')).toBe('g1 → g2\nunblock (inferred)')
   })
 })
+
+import { regionTooltip, logTooltip } from './tooltip'
+
+describe('regionTooltip', () => {
+  it('shows the region name and its duration in ms', () => {
+    expect(regionTooltip('db-query', 1_000_000, 4_000_000)).toBe('db-query\n3.000 ms')
+  })
+})
+
+describe('logTooltip', () => {
+  it('shows category then message', () => {
+    expect(logTooltip('cache', 'miss')).toBe('cache\nmiss')
+  })
+})
