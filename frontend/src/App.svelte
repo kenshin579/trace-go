@@ -23,10 +23,13 @@
   }
 
   function onKeydown(e: KeyboardEvent) {
-    if (e.code === 'Space' && $summary) {
-      e.preventDefault()
-      traceStore.toggle()
-    }
+    if (e.code !== 'Space' || !$summary) return
+    // If a control (button/select/checkbox) is focused, let its native Space
+    // activation handle it — otherwise both fire and the toggle cancels out.
+    const tag = (e.target as HTMLElement).tagName
+    if (tag === 'BUTTON' || tag === 'SELECT' || tag === 'INPUT' || tag === 'TEXTAREA') return
+    e.preventDefault()
+    traceStore.toggle()
   }
 </script>
 
