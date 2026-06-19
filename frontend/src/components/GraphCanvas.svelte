@@ -118,17 +118,14 @@
     const span = $summary ? $summary.endTime - $summary.startTime : 0
     const win = span * 0.03
     const active = $summary ? new Set(activeEdges($summary.edges, t, win).map((e) => `${e.from}->${e.to}`)) : new Set<string>()
-    const catByPair = new Map<string, string>()
-    if ($summary) for (const e of $summary.edges) catByPair.set(`${e.from}->${e.to}`, e.category)
 
-    // Edges first (under nodes). Active edges take their category color.
+    // Edges first (under nodes). Active edges take their (inferred) category color.
     for (const l of links) {
       const s = l.source as unknown as GraphNode
       const tg = l.target as unknown as GraphNode
       if (s.x == null || tg.x == null) continue
-      const key = `${s.id}->${tg.id}`
-      const isActive = active.has(key)
-      ctx.strokeStyle = isActive ? categoryColor((catByPair.get(key) as any) ?? l.category) : DIM_COLOR
+      const isActive = active.has(`${s.id}->${tg.id}`)
+      ctx.strokeStyle = isActive ? categoryColor(l.category) : DIM_COLOR
       ctx.lineWidth = isActive ? 2.5 : 1
       ctx.beginPath()
       ctx.moveTo(s.x, s.y!)
