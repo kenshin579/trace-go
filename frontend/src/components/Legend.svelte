@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { stateColor, DIM_COLOR, EDGE_ACTIVE_COLOR } from '../lib/format'
+  import { stateColor, DIM_COLOR, categoryColor } from '../lib/format'
 
   const states: { label: string; color: string }[] = [
     { label: 'running', color: stateColor('running') },
@@ -7,14 +7,21 @@
     { label: 'blocked', color: stateColor('blocked') },
     { label: 'not alive', color: DIM_COLOR },
   ]
+  const edges: { label: string; color: string }[] = [
+    { label: 'channel', color: categoryColor('channel') },
+    { label: 'mutex', color: categoryColor('mutex') },
+    { label: 'other', color: categoryColor('other') },
+  ]
 </script>
 
 <div class="legend">
   {#each states as s}
     <span class="item"><span class="swatch" style="background:{s.color}"></span>{s.label}</span>
   {/each}
-  <span class="item"><span class="edge" style="border-top-color:{EDGE_ACTIVE_COLOR}"></span>edge (firing now)</span>
-  <span class="item"><span class="edge" style="border-top-color:{DIM_COLOR}"></span>edge (inferred link)</span>
+  {#each edges as e}
+    <span class="item"><span class="edge" style="border-top-color:{e.color}"></span>{e.label} (inferred)</span>
+  {/each}
+  <span class="item"><span class="edge" style="border-top-color:{DIM_COLOR}"></span>inferred link</span>
 </div>
 
 <style>

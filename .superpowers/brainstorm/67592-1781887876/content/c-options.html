@@ -1,0 +1,69 @@
+<h2>C(시각화 폴리시) — 어디에 집중할까요?</h2>
+<p class="subtitle">세 후보는 서로 독립적입니다. 우선순위를 정해 한 계획으로 묶겠습니다. 끌리는 걸 클릭하세요(복수 선택 가능).</p>
+
+<div class="cards" data-multiselect>
+
+  <!-- C7 edge flash -->
+  <div class="card" data-choice="c7" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0f1117;padding:14px;">
+      <svg viewBox="0 0 300 150" width="100%" height="150">
+        <line x1="60" y1="75" x2="240" y2="75" stroke="#2a2e38" stroke-width="2"/>
+        <circle cx="60" cy="75" r="14" fill="#4caf50"/><text x="60" y="79" fill="#0f1117" font-size="9" text-anchor="middle">G1</text>
+        <circle cx="240" cy="75" r="14" fill="#c25450"/><text x="240" y="79" fill="#fff" font-size="9" text-anchor="middle">G2</text>
+        <!-- flowing pulses -->
+        <circle cx="120" cy="75" r="6" fill="#5b8def"/>
+        <circle cx="150" cy="75" r="5" fill="#5b8def" opacity="0.7"/>
+        <circle cx="180" cy="75" r="4" fill="#5b8def" opacity="0.4"/>
+        <text x="150" y="40" fill="#8a93a3" font-size="9" text-anchor="middle">언블록 순간 → 입자가 흐름</text>
+      </svg>
+    </div>
+    <div class="card-body">
+      <h3>C7. 엣지 flash 애니메이션</h3>
+      <p>goroutine A가 B를 깨우는 순간, 엣지 위로 빛 입자/펄스가 흐름. <b>gotrace의 "값이 흐르는" 그 감성.</b> 학습·데모 임팩트 최고. 재생 인프라(playhead) 위에 얹음.</p>
+    </div>
+  </div>
+
+  <!-- C8 zoom/pan -->
+  <div class="card" data-choice="c8" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0f1117;padding:14px;">
+      <svg viewBox="0 0 300 150" width="100%" height="150">
+        <rect x="20" y="30" width="260" height="10" rx="2" fill="#3a3f4b"/>
+        <rect x="20" y="44" width="260" height="10" rx="2" fill="#3a3f4b"/>
+        <!-- zoom window -->
+        <rect x="110" y="22" width="70" height="42" fill="none" stroke="#5b8def" stroke-width="2" stroke-dasharray="4 2"/>
+        <!-- magnified -->
+        <rect x="40" y="90" width="220" height="16" rx="2" fill="#4caf50"/>
+        <rect x="40" y="110" width="220" height="16" rx="2" fill="#c25450"/>
+        <line x1="110" y1="64" x2="40" y2="86" stroke="#5b8def" stroke-width="1"/>
+        <line x1="180" y1="64" x2="260" y2="86" stroke="#5b8def" stroke-width="1"/>
+        <text x="150" y="135" fill="#8a93a3" font-size="9" text-anchor="middle">시간 구간을 확대해서 자세히</text>
+      </svg>
+    </div>
+    <div class="card-body">
+      <h3>C8. 타임라인/그래프 줌·팬</h3>
+      <p>특정 시간 창을 확대해 짧은 구간의 세밀한 전이를 봄. <b>실무 디버깅 유용.</b> 단, 시간↔픽셀 스케일·스크럽·플레이헤드 좌표를 "보이는 창" 기준으로 다 바꿔야 해서 가장 무거움.</p>
+    </div>
+  </div>
+
+  <!-- C9 lane labels -->
+  <div class="card" data-choice="c9" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0f1117;padding:14px;">
+      <svg viewBox="0 0 300 150" width="100%" height="150">
+        <text x="8" y="46" fill="#cdd3df" font-size="9">main.main</text>
+        <rect x="78" y="38" width="200" height="12" rx="2" fill="#4caf50"/>
+        <text x="8" y="74" fill="#cdd3df" font-size="9">main.worker</text>
+        <rect x="78" y="66" width="200" height="12" rx="2" fill="#c25450"/>
+        <text x="8" y="102" fill="#cdd3df" font-size="9">io.Copy</text>
+        <rect x="78" y="94" width="200" height="12" rx="2" fill="#9aa3b2"/>
+        <text x="150" y="135" fill="#8a93a3" font-size="9" text-anchor="middle">레인 옆에 이름 상시 표시</text>
+      </svg>
+    </div>
+    <div class="card-body">
+      <h3>C9. 타임라인 레인 라벨 상시 표시</h3>
+      <p>지금은 hover해야 이름이 보임 → 레인 왼쪽에 goroutine 이름을 항상 표시. <b>작고 확실한 가독성 개선.</b> 다른 둘과 잘 어울림.</p>
+    </div>
+  </div>
+
+</div>
+
+<p class="subtitle" style="margin-top:16px;">제 추천: <b>C7 + C9</b> ("살아있고 + 읽기 쉽게"). C8(줌·팬)은 스케일/스크럽 좌표를 전면 수정해야 해서 별도 계획으로 빼는 게 안전합니다.</p>

@@ -26,3 +26,17 @@ export function stateColor(state: IntervalState): string {
 // Shared graph colors (kept here so the graph renderer and the legend can't drift).
 export const DIM_COLOR = '#2a2e38' // node not alive at the current time / inactive edge
 export const EDGE_ACTIVE_COLOR = '#5b8def' // edge firing near the playhead
+
+import type { EdgeCategory } from './types'
+
+// Per-category edge/comet colors. These encode the inferred synchronization
+// kind, NOT a transferred value (the trace has no channel identity).
+export const CATEGORY_COLORS: Record<EdgeCategory, string> = {
+  channel: '#5b8def',
+  mutex: '#e0a030',
+  other: '#a78bdb',
+}
+
+export function categoryColor(category: EdgeCategory): string {
+  return CATEGORY_COLORS[category] ?? CATEGORY_COLORS.channel
+}

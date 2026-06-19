@@ -1,0 +1,66 @@
+<h2>flash 모양 — 어떤 스타일이 좋나요?</h2>
+<p class="subtitle">G1(초록, 깨우는 쪽) → G2(빨강→깨어남). 실제로 움직입니다. 마음에 드는 걸 클릭하세요.</p>
+
+<div class="cards">
+
+  <!-- A: particle -->
+  <div class="card" data-choice="particle" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0f1117;padding:14px;">
+      <svg viewBox="0 0 300 110" width="100%" height="110">
+        <line x1="55" y1="55" x2="245" y2="55" stroke="#2a2e38" stroke-width="2"/>
+        <circle cx="55" cy="55" r="13" fill="#4caf50"/>
+        <circle cx="245" cy="55" r="13" fill="#c25450"/>
+        <circle r="6" fill="#5b8def">
+          <animate attributeName="cx" values="55;245" dur="0.6s" begin="0s;a.end+0.5s" id="a"/>
+          <animate attributeName="cy" values="55;55" dur="0.6s" begin="0s;a.end+0.5s"/>
+          <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.8;1" dur="0.6s" begin="0s;a.end+0.5s"/>
+        </circle>
+      </svg>
+    </div>
+    <div class="card-body">
+      <h3>A. 파티클 (단일 입자)</h3>
+      <p>빛 점 하나가 깨우는 쪽 → 깨어나는 쪽으로 이동 후 사라짐. 방향이 또렷하고 깔끔함.</p>
+    </div>
+  </div>
+
+  <!-- B: comet -->
+  <div class="card" data-choice="comet" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0f1117;padding:14px;">
+      <svg viewBox="0 0 300 110" width="100%" height="110">
+        <line x1="55" y1="55" x2="245" y2="55" stroke="#2a2e38" stroke-width="2"/>
+        <circle cx="55" cy="55" r="13" fill="#4caf50"/>
+        <circle cx="245" cy="55" r="13" fill="#c25450"/>
+        <circle r="3" fill="#5b8def" opacity="0.35"><animate attributeName="cx" values="55;245" dur="0.6s" begin="0s;b.end+0.5s" id="b"/></circle>
+        <circle r="4" fill="#5b8def" opacity="0.6"><animate attributeName="cx" values="40;230" dur="0.6s" begin="0s;b.end+0.5s"/></circle>
+        <circle r="6" fill="#7aa7f5"><animate attributeName="cx" values="25;215" dur="0.6s" begin="0s;b.end+0.5s"/><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.15;0.85;1" dur="0.6s" begin="0s;b.end+0.5s"/></circle>
+      </svg>
+    </div>
+    <div class="card-body">
+      <h3>B. 코멧 (꼬리 달린 입자)</h3>
+      <p>입자에 흐릿한 꼬리가 따라붙어 더 역동적. "흐름"이 강조됨.</p>
+    </div>
+  </div>
+
+  <!-- C: pulse + ripple -->
+  <div class="card" data-choice="pulse" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0f1117;padding:14px;">
+      <svg viewBox="0 0 300 110" width="100%" height="110">
+        <line x1="55" y1="55" x2="245" y2="55" stroke="#2a2e38" stroke-width="2"/>
+        <line x1="55" y1="55" x2="245" y2="55" stroke="#5b8def" stroke-width="3">
+          <animate attributeName="opacity" values="0;1;0" keyTimes="0;0.3;1" dur="0.6s" begin="0s;r.end+0.5s"/>
+        </line>
+        <circle cx="55" cy="55" r="13" fill="#4caf50"/>
+        <circle cx="245" cy="55" r="13" fill="#c25450"/>
+        <circle cx="245" cy="55" fill="none" stroke="#5b8def" stroke-width="2">
+          <animate attributeName="r" values="13;26" dur="0.5s" begin="0.25s;r.end+0.75s" id="r"/>
+          <animate attributeName="opacity" values="0.9;0" dur="0.5s" begin="0.25s;r.end+0.75s"/>
+        </circle>
+      </svg>
+    </div>
+    <div class="card-body">
+      <h3>C. 펄스 + 링 (엣지 점멸 + 도착 파동)</h3>
+      <p>엣지 전체가 잠깐 밝아지고, 깨어나는 노드에서 링이 퍼짐. "깨어남" 순간이 강조됨. 입자 이동감은 덜함.</p>
+    </div>
+  </div>
+
+</div>

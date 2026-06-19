@@ -1,0 +1,67 @@
+<h2>코멧 색: 단일 vs 카테고리별 — 비교</h2>
+<p class="subtitle">중앙 G0가 세 goroutine을 깨움: 채널·뮤텍스·기타. 코멧이 각 엣지를 타고 흐릅니다. 마음에 드는 쪽을 클릭하세요.</p>
+
+<div class="split">
+
+  <!-- A: single color -->
+  <div class="mockup">
+    <div class="mockup-header">A. 단일 색 (파랑)</div>
+    <div class="mockup-body" style="background:#0f1117;padding:14px;">
+      <svg viewBox="0 0 220 200" width="100%" height="200">
+        <!-- edges -->
+        <line x1="100" y1="100" x2="185" y2="45" stroke="#2a2e38" stroke-width="2"/>
+        <line x1="100" y1="100" x2="190" y2="160" stroke="#2a2e38" stroke-width="2"/>
+        <line x1="100" y1="100" x2="30" y2="165" stroke="#2a2e38" stroke-width="2"/>
+        <!-- nodes -->
+        <circle cx="100" cy="100" r="13" fill="#4caf50"/><text x="100" y="104" fill="#0f1117" font-size="9" text-anchor="middle">G0</text>
+        <circle cx="185" cy="45" r="11" fill="#c25450"/>
+        <circle cx="190" cy="160" r="11" fill="#c25450"/>
+        <circle cx="30" cy="165" r="11" fill="#c25450"/>
+        <!-- comets (all blue) -->
+        <circle r="5.5" fill="#5b8def"><animate attributeName="cx" values="100;185" dur="0.6s" begin="0s;x.end+0.9s" id="x"/><animate attributeName="cy" values="100;45" dur="0.6s" begin="0s;x.end+0.9s"/><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.85;1" dur="0.6s" begin="0s;x.end+0.9s"/></circle>
+        <circle r="5.5" fill="#5b8def"><animate attributeName="cx" values="100;190" dur="0.6s" begin="0.3s;x.end+1.2s"/><animate attributeName="cy" values="100;160" dur="0.6s" begin="0.3s;x.end+1.2s"/><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.85;1" dur="0.6s" begin="0.3s;x.end+1.2s"/></circle>
+        <circle r="5.5" fill="#5b8def"><animate attributeName="cx" values="100;30" dur="0.6s" begin="0.6s;x.end+1.5s"/><animate attributeName="cy" values="100;165" dur="0.6s" begin="0.6s;x.end+1.5s"/><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.85;1" dur="0.6s" begin="0.6s;x.end+1.5s"/></circle>
+      </svg>
+      <p class="subtitle" style="text-align:center">채널/뮤텍스/기타 구분은 hover 툴팁에서만</p>
+    </div>
+  </div>
+
+  <!-- B: per-category -->
+  <div class="mockup">
+    <div class="mockup-header">B. 카테고리별 색</div>
+    <div class="mockup-body" style="background:#0f1117;padding:14px;">
+      <svg viewBox="0 0 220 200" width="100%" height="200">
+        <line x1="100" y1="100" x2="185" y2="45" stroke="#2a2e38" stroke-width="2"/>
+        <line x1="100" y1="100" x2="190" y2="160" stroke="#2a2e38" stroke-width="2"/>
+        <line x1="100" y1="100" x2="30" y2="165" stroke="#2a2e38" stroke-width="2"/>
+        <circle cx="100" cy="100" r="13" fill="#4caf50"/><text x="100" y="104" fill="#0f1117" font-size="9" text-anchor="middle">G0</text>
+        <circle cx="185" cy="45" r="11" fill="#c25450"/>
+        <circle cx="190" cy="160" r="11" fill="#c25450"/>
+        <circle cx="30" cy="165" r="11" fill="#c25450"/>
+        <!-- channel = blue -->
+        <circle r="5.5" fill="#5b8def"><animate attributeName="cx" values="100;185" dur="0.6s" begin="0s;y.end+0.9s" id="y"/><animate attributeName="cy" values="100;45" dur="0.6s" begin="0s;y.end+0.9s"/><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.85;1" dur="0.6s" begin="0s;y.end+0.9s"/></circle>
+        <!-- mutex = amber -->
+        <circle r="5.5" fill="#e0a030"><animate attributeName="cx" values="100;190" dur="0.6s" begin="0.3s;y.end+1.2s"/><animate attributeName="cy" values="100;160" dur="0.6s" begin="0.3s;y.end+1.2s"/><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.85;1" dur="0.6s" begin="0.3s;y.end+1.2s"/></circle>
+        <!-- other = purple -->
+        <circle r="5.5" fill="#a78bdb"><animate attributeName="cx" values="100;30" dur="0.6s" begin="0.6s;y.end+1.5s"/><animate attributeName="cy" values="100;165" dur="0.6s" begin="0.6s;y.end+1.5s"/><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.85;1" dur="0.6s" begin="0.6s;y.end+1.5s"/></circle>
+      </svg>
+      <p class="subtitle" style="text-align:center">
+        <span style="color:#5b8def">●</span> channel
+        <span style="color:#e0a030">●</span> mutex
+        <span style="color:#a78bdb">●</span> other
+      </p>
+    </div>
+  </div>
+
+</div>
+
+<div class="options">
+  <div class="option" data-choice="single" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content"><h3>단일 색</h3><p>단순·일관, 카테고리는 툴팁</p></div>
+  </div>
+  <div class="option" data-choice="category" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content"><h3>카테고리별 색</h3><p>동기화 종류가 한눈에, 범례 추가</p></div>
+  </div>
+</div>

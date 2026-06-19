@@ -11,38 +11,38 @@
 
   let container: HTMLDivElement
   let canvas: HTMLCanvasElement
-  let cssWidth = 800 // CSS (layout) pixel width of the time axis; tracked to the container
+  let cssWidth = 800
   const LANE_H = 18
   const LANE_GAP = 3
+  const GUTTER_W = 120 // left column reserved for goroutine labels
 
   let dragging = false
   let tip: { text: string; x: number; y: number } | null = null
 
-  // Layout and height are derived reactively from the loaded summary and the
-  // current width. Using $summary/$playhead auto-subscriptions means Svelte
-  // owns subscription lifecycle (no manual leak).
   $: visible = $summary ? visibleGoroutines($summary, $showSystem) : []
   $: lanes = $summary
     ? layoutTimeline(
         { ...$summary, goroutines: visible },
-        { width: cssWidth, laneHeight: LANE_H, laneGap: LANE_GAP },
+        { width: cssWidth, laneHeight: LANE_H, laneGap: LANE_GAP, gutter: GUTTER_W },
       )
     : ([] as Lane[])
   $: cssHeight = Math.max(400, visible.length * (LANE_H + LANE_GAP))
 
-  // Redraw whenever any input to the picture changes. draw() no-ops until the
-  // canvas is mounted; onMount triggers the first real paint.
   $: void [$playhead, lanes, cssWidth, cssHeight, $selectedId], draw()
+
+  // Truncate a label with an ellipsis so it fits in maxW pixels.
+  function fitLabel(ctx: CanvasRenderingContext2D, text: string, maxW: number): string {
+    if (ctx.measureText(text).width <= maxW) return text
+    let s = text
+    while (s.length > 1 && ctx.measureText(s + '…').width > maxW) s = s.slice(0, -1)
+    return s + '…'
+  }
 
   function draw() {
     if (!canvas) return
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    // Size the bitmap to the CSS box so layout/pointer pixels share one
-    // coordinate space (the playhead must land under the cursor), and scale by
-    // devicePixelRatio for crisp lines. Setting canvas.width is a DOM op, not a
-    // reactive write, so this does not re-trigger the reactive block above.
     const dpr = window.devicePixelRatio || 1
     canvas.width = Math.round(cssWidth * dpr)
     canvas.height = Math.round(cssHeight * dpr)
@@ -59,25 +59,32 @@
       }
     }
 
+    // Lane labels in the left gutter.
+    ctx.font = '11px system-ui, sans-serif'
+    ctx.textBaseline = 'middle'
+    ctx.fillStyle = '#cdd3df'
+    for (const lane of lanes) {
+      ctx.fillText(fitLabel(ctx, lane.label, GUTTER_W - 10), 4, lane.y + lane.height / 2)
+    }
+
     const lanesBottom = lanes.length * (LANE_H + LANE_GAP)
 
-    // Highlight the selected goroutine's lane.
     for (const lane of lanes) {
       if (lane.goroutineId === $selectedId) {
         ctx.strokeStyle = '#ffffff'
         ctx.lineWidth = 1.5
-        ctx.strokeRect(0.5, lane.y + 0.5, cssWidth - 1, lane.height - 1)
+        ctx.strokeRect(GUTTER_W + 0.5, lane.y + 0.5, cssWidth - GUTTER_W - 1, lane.height - 1)
       }
     }
 
     if ($summary) {
-      const scale = makeTimeScale($summary.startTime, $summary.endTime, 0, cssWidth)
+      const scale = makeTimeScale($summary.startTime, $summary.endTime, GUTTER_W, cssWidth)
       const x = scale.toPixel($playhead)
       ctx.strokeStyle = '#5b8def'
       ctx.lineWidth = 2
       ctx.beginPath()
       ctx.moveTo(x, 0)
-      ctx.lineTo(x, Math.max(lanesBottom, 1)) // clamp to lanes, not full canvas
+      ctx.lineTo(x, Math.max(lanesBottom, 1))
       ctx.stroke()
     }
   }
@@ -85,8 +92,8 @@
   function timeAtClientX(clientX: number): number {
     if (!$summary) return 0
     const rect = canvas.getBoundingClientRect()
-    const scale = makeTimeScale($summary.startTime, $summary.endTime, 0, cssWidth)
-    return scale.toTime(clientX - rect.left)
+    const scale = makeTimeScale($summary.startTime, $summary.endTime, GUTTER_W, cssWidth)
+    return scale.toTime(clientX - rect.left) // store clamps to [startTime,endTime]
   }
 
   function onPointerDown(e: PointerEvent) {
