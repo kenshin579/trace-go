@@ -11,6 +11,7 @@ export interface TraceStore {
   playing: Writable<boolean>
   speed: Writable<number>
   showSystem: Writable<boolean>
+  selectedId: Writable<number | null>
   loadSummary(s: TraceSummary): void
   setPlayhead(t: number): void
   play(): void
@@ -19,6 +20,8 @@ export interface TraceStore {
   setSpeed(n: number): void
   setShowSystem(v: boolean): void
   advance(dtMs: number): void
+  setSelected(id: number | null): void
+  toggleSelected(id: number): void
 }
 
 // createTraceStore holds the loaded trace, the playhead, and playback/filter
@@ -31,6 +34,7 @@ export function createTraceStore(): TraceStore {
   const playing = writable<boolean>(false)
   const speed = writable<number>(1)
   const showSystem = writable<boolean>(false)
+  const selectedId = writable<number | null>(null)
   let current: TraceSummary | null = null
   let rafId = 0
   let lastFrame = 0
@@ -62,6 +66,7 @@ export function createTraceStore(): TraceStore {
     playing,
     speed,
     showSystem,
+    selectedId,
     loadSummary(s) {
       current = s
       summary.set(s)
@@ -93,6 +98,12 @@ export function createTraceStore(): TraceStore {
     },
     setShowSystem(v) {
       showSystem.set(v)
+    },
+    setSelected(id) {
+      selectedId.set(id)
+    },
+    toggleSelected(id) {
+      selectedId.update((cur) => (cur === id ? null : id))
     },
     advance(dtMs) {
       if (!current) return

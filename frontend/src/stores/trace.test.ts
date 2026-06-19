@@ -118,3 +118,27 @@ describe('createTraceStore playback', () => {
     }
   })
 })
+
+describe('createTraceStore selection', () => {
+  it('defaults to no selection', () => {
+    const s = createTraceStore()
+    expect(get(s.selectedId)).toBeNull()
+  })
+  it('setSelected sets and clears the selection', () => {
+    const s = createTraceStore()
+    s.setSelected(7)
+    expect(get(s.selectedId)).toBe(7)
+    s.setSelected(null)
+    expect(get(s.selectedId)).toBeNull()
+  })
+  it('toggleSelected toggles the same id off and switches to a new one', () => {
+    const s = createTraceStore()
+    s.toggleSelected(7)
+    expect(get(s.selectedId)).toBe(7)
+    s.toggleSelected(7) // same -> clear
+    expect(get(s.selectedId)).toBeNull()
+    s.toggleSelected(7)
+    s.toggleSelected(9) // different -> switch
+    expect(get(s.selectedId)).toBe(9)
+  })
+})
