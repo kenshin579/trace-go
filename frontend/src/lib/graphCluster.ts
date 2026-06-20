@@ -6,7 +6,8 @@ import type { Goroutine } from './types'
 export function clusterByTask(goroutines: Goroutine[], knownTaskIds: Set<number>): Map<number, number> {
   const out = new Map<number, number>()
   for (const g of goroutines) {
-    const reg = (g.regions ?? []).find((r) => r.task != null && knownTaskIds.has(r.task))
+    // task 0 is the background task (never a user-created, known task id).
+    const reg = (g.regions ?? []).find((r) => r.task != null && r.task !== 0 && knownTaskIds.has(r.task))
     if (reg) out.set(g.id, reg.task as number)
   }
   return out

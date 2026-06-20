@@ -31,10 +31,12 @@ export function layoutTaskTrack(tasks: Task[], opts: TaskTrackOptions): TaskTrac
   if (tasks.length === 0) return { bars: [], height: 0 }
   const byId = new Map<number, Task>(tasks.map((t) => [t.id, t]))
   const depthCache = new Map<number, number>()
-  const depthOf = (t: Task): number => {
+  const depthOf = (t: Task, seen: Set<number> = new Set()): number => {
     if (depthCache.has(t.id)) return depthCache.get(t.id)!
+    if (seen.has(t.id)) return 0 // guard against a cyclic parent chain (malformed input)
+    seen.add(t.id)
     const parent = byId.get(t.parent)
-    const d = parent ? depthOf(parent) + 1 : 0
+    const d = parent ? depthOf(parent, seen) + 1 : 0
     depthCache.set(t.id, d)
     return d
   }
