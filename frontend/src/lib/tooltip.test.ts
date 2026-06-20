@@ -30,7 +30,7 @@ describe('edgeTooltip', () => {
   })
 })
 
-import { regionTooltip, logTooltip } from './tooltip'
+import { regionTooltip, logTooltip, taskTooltip } from './tooltip'
 
 describe('regionTooltip', () => {
   it('shows the region name and its duration in ms', () => {
@@ -41,5 +41,11 @@ describe('regionTooltip', () => {
 describe('logTooltip', () => {
   it('shows category then message', () => {
     expect(logTooltip('cache', 'miss')).toBe('cache\nmiss')
+  })
+})
+
+describe('taskTooltip', () => {
+  it('shows the task name and duration in ms', () => {
+    expect(taskTooltip('request', 0, 2_000_000)).toBe('request\n2.000 ms')
   })
 })

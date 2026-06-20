@@ -40,3 +40,10 @@ export const CATEGORY_COLORS: Record<EdgeCategory, string> = {
 export function categoryColor(category: EdgeCategory): string {
   return CATEGORY_COLORS[category] ?? CATEGORY_COLORS.channel
 }
+
+// Distinct task colors, indexed by task id (stable across redraws).
+const TASK_PALETTE = ['#7a6bb0', '#5b8def', '#3a8a63', '#c08457', '#b05a8a', '#4aa3a3']
+
+export function taskColor(id: number): string {
+  return TASK_PALETTE[id % TASK_PALETTE.length]
+}

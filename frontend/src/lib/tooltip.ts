@@ -34,3 +34,8 @@ export function regionTooltip(name: string, start: number, end: number): string 
 export function logTooltip(category: string, message: string): string {
   return `${category}\n${message}`
 }
+
+// taskTooltip shows a hovered task's name and its duration (ms, 3 decimals).
+export function taskTooltip(name: string, start: number, end: number): string {
+  return `${name}\n${((end - start) / 1e6).toFixed(3)} ms`
+}

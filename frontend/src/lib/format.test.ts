@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { goroutineLabel, effectiveEnd, stateColor, categoryColor } from './format'
+import { goroutineLabel, effectiveEnd, stateColor, categoryColor, taskColor } from './format'
 
 describe('goroutineLabel', () => {
   it('uses the name when present', () => {
@@ -38,5 +38,12 @@ describe('categoryColor', () => {
   })
   it('falls back to the channel color for an unknown category', () => {
     expect(typeof categoryColor('???' as any)).toBe('string')
+  })
+})
+
+describe('taskColor', () => {
+  it('is deterministic per id and cycles a palette', () => {
+    expect(taskColor(5)).toBe(taskColor(5))
+    expect(typeof taskColor(0)).toBe('string')
   })
 })
