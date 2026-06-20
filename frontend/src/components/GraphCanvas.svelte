@@ -142,6 +142,7 @@
     }
     const taskName = new Map<number, string>(($summary?.tasks ?? []).map((t) => [t.id, t.name]))
     for (const [cid, members] of byCluster) {
+      ctx.globalAlpha = chain && !members.some((n) => chain.has(n.id)) ? GHOST_ALPHA : 1
       const pts = members.map((n) => [n.x!, n.y!] as [number, number])
       const cx = pts.reduce((s, p) => s + p[0], 0) / pts.length
       const cy = pts.reduce((s, p) => s + p[1], 0) / pts.length
@@ -167,12 +168,13 @@
       ctx.font = '10px system-ui, sans-serif'
       ctx.textBaseline = 'alphabetic'
       ctx.fillText(taskName.get(cid) ?? `task ${cid}`, cx - 20, cy - 24)
+      ctx.globalAlpha = 1
     }
 
     const t = $playhead
     const span = $summary ? $summary.endTime - $summary.startTime : 0
     const win = span * 0.03
-    const active = $summary ? new Set(activeEdges($summary.edges, t, win).map((e) => `${e.from}->${e.to}`)) : new Set<string>()
+    const active = !chain && $summary ? new Set(activeEdges($summary.edges, t, win).map((e) => `${e.from}->${e.to}`)) : new Set<string>()
 
     // Edges first (under nodes). When a node is selected, focus mode emphasizes
     // the selected node's incident (chain) edges and ghosts the rest; otherwise

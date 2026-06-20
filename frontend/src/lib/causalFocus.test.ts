@@ -27,4 +27,7 @@ describe('causalNeighbors', () => {
   it('adds the from-neighbor when selected is the to side', () => {
     expect(causalNeighbors([{ from: 7, to: 8, time: 0, category: 'channel' }], 8).has(7)).toBe(true)
   })
+  it('returns just the selected node when the edge list is empty', () => {
+    expect([...causalNeighbors([], 42)]).toEqual([42])
+  })
 })
