@@ -47,3 +47,6 @@ frontend/dist/*
 
 # Wails frontend build cache (per-machine)
 frontend/package.json.md5
+
+# Superpowers brainstorm visual-companion mockups
+.superpowers/

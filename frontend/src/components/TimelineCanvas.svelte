@@ -8,6 +8,7 @@
   import { hitTimeline } from '../lib/hit'
   import { intervalTooltip, regionTooltip, logTooltip, taskTooltip } from '../lib/tooltip'
   import { taskColor } from '../lib/format'
+  import { causalNeighbors } from '../lib/causalFocus'
 
   const { summary, playhead, showSystem, selectedId, setPlayhead } = traceStore
 
@@ -21,6 +22,7 @@
   const REGION_COLOR = '#5a6b8c'
   const LOG_COLOR = '#e0c030'
   const TASK_ROW_H = 14
+  const GHOST_ALPHA = 0.15
 
   let dragging = false
   let tip: { text: string; x: number; y: number } | null = null
@@ -40,6 +42,8 @@
   $: cssHeight = lanes.length
     ? Math.max(400, lanes[lanes.length - 1].y + lanes[lanes.length - 1].totalHeight)
     : 400
+
+  $: chain = $summary && $selectedId !== null ? causalNeighbors($summary.edges, $selectedId) : null
 
   $: void [$playhead, lanes, cssWidth, cssHeight, $selectedId, taskTrack], draw()
 
@@ -82,8 +86,12 @@
       ctx.fillText('TASKS', 4, TASK_ROW_H / 2)
     }
 
+    // In focus mode, lanes whose goroutine is not in the selected chain are ghosted.
+    const laneAlpha = (gid: number) => (chain && !chain.has(gid) ? GHOST_ALPHA : 1)
+
     // State bars.
     for (const lane of lanes) {
+      ctx.globalAlpha = laneAlpha(lane.goroutineId)
       for (const r of lane.rects) {
         ctx.fillStyle = r.color
         ctx.fillRect(r.x, lane.y, r.width, lane.height)
@@ -94,6 +102,7 @@
     ctx.font = '9px system-ui, sans-serif'
     ctx.textBaseline = 'middle'
     for (const lane of lanes) {
+      ctx.globalAlpha = laneAlpha(lane.goroutineId)
       for (const reg of lane.regions) {
         const ry = lane.y + lane.height + reg.depth * REGION_ROW_H
         ctx.fillStyle = REGION_COLOR
@@ -107,6 +116,7 @@
 
     // Log markers (small diamonds on the top edge of the state row).
     for (const lane of lanes) {
+      ctx.globalAlpha = laneAlpha(lane.goroutineId)
       for (const lg of lane.logs) {
         const my = lane.y + 4
         ctx.fillStyle = LOG_COLOR
@@ -124,8 +134,10 @@
     ctx.font = '11px system-ui, sans-serif'
     ctx.fillStyle = '#cdd3df'
     for (const lane of lanes) {
+      ctx.globalAlpha = laneAlpha(lane.goroutineId)
       ctx.fillText(fitLabel(ctx, lane.label, GUTTER_W - 10), 4, lane.y + lane.height / 2)
     }
+    ctx.globalAlpha = 1
 
     // Selected lane outline (full lane incl. region rows).
     for (const lane of lanes) {
