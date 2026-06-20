@@ -39,7 +39,7 @@
 
 <main>
   <header>
-    <button on:click={open} disabled={loading}>Open trace…</button>
+    <button class="open-btn" on:click={open} disabled={loading}>Open trace…</button>
     {#if $summary}
       <span class="info">
         {$summary.goroutines.length} goroutines · {$summary.edges.length} edges ·
@@ -68,8 +68,8 @@
 <style>
   main { font-family: system-ui, sans-serif; color: #cdd3df; background: #0f1117; height: 100vh; display: flex; flex-direction: column; }
   header { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 1px solid #2a2e38; }
-  button { background: #5b8def; color: white; border: 0; padding: 6px 12px; border-radius: 6px; cursor: pointer; }
-  button:disabled { opacity: 0.6; cursor: default; }
+  .open-btn { background: #5b8def; color: white; border: 0; padding: 6px 12px; border-radius: 6px; cursor: pointer; }
+  .open-btn:disabled { opacity: 0.6; cursor: default; }
   .info { font-size: 13px; color: #8a93a3; }
   .error-banner {
     display: flex; align-items: center; gap: 10px;

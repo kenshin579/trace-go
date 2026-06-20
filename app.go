@@ -52,7 +52,7 @@ func (a *App) OpenTraceDialog() (*model.TraceSummary, error) {
 		},
 	})
 	if err != nil {
-		return nil, err
+		return nil, errors.New("Couldn't open the file picker — please try again.")
 	}
 	if path == "" {
 		return nil, nil // user cancelled

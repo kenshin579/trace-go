@@ -68,6 +68,7 @@ func TestOpenTraceNotATraceErrors(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected an error opening a non-trace file")
 	}
+	// Partial match: the not-a-trace message is long and embeds a shell example.
 	if !strings.Contains(err.Error(), "isn't a Go execution trace") {
 		t.Fatalf("unfriendly not-a-trace error: %q", err.Error())
 	}
