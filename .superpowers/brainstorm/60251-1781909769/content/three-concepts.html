@@ -1,0 +1,80 @@
+<h2>region · task · log — 무엇이 다른가</h2>
+<p class="subtitle">두 가지로 갈립니다: <b>구간(시작~끝)인가 시점인가</b>, 그리고 <b>한 goroutine인가 여러 goroutine인가</b>.</p>
+
+<div class="cards">
+
+  <!-- REGION -->
+  <div class="card">
+    <div class="card-image" style="background:#0f1117;padding:14px;">
+      <svg viewBox="0 0 280 130" width="100%" height="130" font-family="system-ui">
+        <text x="6" y="34" fill="#8a93a3" font-size="9">G1</text>
+        <rect x="34" y="26" width="230" height="14" rx="2" fill="#4caf50"/>
+        <!-- region span inside G1 only -->
+        <rect x="90" y="42" width="110" height="9" rx="2" fill="#7a5a2f"/>
+        <text x="95" y="49.5" fill="#cdd3df" font-size="7">db-query</text>
+        <text x="6" y="80" fill="#8a93a3" font-size="9">G2</text>
+        <rect x="34" y="72" width="230" height="14" rx="2" fill="#9aa3b2"/>
+        <text x="34" y="112" fill="#5b8def" font-size="8.5">⟵ 한 goroutine 안의 시간 구간 ⟶</text>
+      </svg>
+    </div>
+    <div class="card-body">
+      <h3>region — "구간 · 한 goroutine"</h3>
+      <p><b>시작~끝이 있는 시간 구간</b>이고, <b>딱 한 goroutine 안</b>에 있음. 중첩 가능.<br>
+      <span style="color:#8a93a3">질문: "이 goroutine이 그때 <b>뭘 하던 중</b>이었나?"</span><br>
+      <code style="color:#7aa7f5;font-size:11px">trace.WithRegion(ctx, "db-query", fn)</code></p>
+    </div>
+  </div>
+
+  <!-- TASK -->
+  <div class="card">
+    <div class="card-image" style="background:#0f1117;padding:14px;">
+      <svg viewBox="0 0 280 130" width="100%" height="130" font-family="system-ui">
+        <text x="6" y="40" fill="#8a93a3" font-size="9">G1</text>
+        <rect x="34" y="32" width="230" height="12" rx="2" fill="#4caf50"/>
+        <text x="6" y="66" fill="#8a93a3" font-size="9">G2</text>
+        <rect x="34" y="58" width="230" height="12" rx="2" fill="#c25450"/>
+        <text x="6" y="92" fill="#8a93a3" font-size="9">G3</text>
+        <rect x="34" y="84" width="230" height="12" rx="2" fill="#4caf50"/>
+        <!-- task bracket spanning all goroutines over a time range -->
+        <rect x="80" y="24" width="150" height="80" rx="4" fill="none" stroke="#7a6bb0" stroke-width="2" stroke-dasharray="4 2"/>
+        <rect x="80" y="14" width="150" height="12" rx="3" fill="#3b3357" stroke="#7a6bb0"/>
+        <text x="86" y="23" fill="#cdd3df" font-size="8">request #1</text>
+      </svg>
+    </div>
+    <div class="card-body">
+      <h3>task — "구간 · 여러 goroutine"</h3>
+      <p>역시 시작~끝 구간이지만 <b>여러 goroutine에 걸친 논리 작업</b>. 계층(상위/하위) 가능, region·log를 묶음.<br>
+      <span style="color:#8a93a3">질문: "이 <b>요청 전체</b>가 어디서 어디까지, 무엇에 걸쳐?"</span><br>
+      <code style="color:#7aa7f5;font-size:11px">ctx, t := trace.NewTask(ctx, "request #1")</code></p>
+    </div>
+  </div>
+
+  <!-- LOG -->
+  <div class="card">
+    <div class="card-image" style="background:#0f1117;padding:14px;">
+      <svg viewBox="0 0 280 130" width="100%" height="130" font-family="system-ui">
+        <text x="6" y="50" fill="#8a93a3" font-size="9">G1</text>
+        <rect x="34" y="42" width="230" height="14" rx="2" fill="#4caf50"/>
+        <!-- single point marker, no duration -->
+        <path d="M150 42 l5 5 l-5 5 l-5 -5 z" fill="#e0c030"/>
+        <line x1="150" y1="30" x2="150" y2="56" stroke="#e0c030" stroke-width="1" stroke-dasharray="2 2"/>
+        <text x="120" y="24" fill="#e0c030" font-size="8">"cache miss"</text>
+        <text x="60" y="86" fill="#5b8def" font-size="8.5">▲ 한 순간(폭 없음)</text>
+      </svg>
+    </div>
+    <div class="card-body">
+      <h3>log — "시점 (폭 없음)"</h3>
+      <p><b>지속시간이 없는 한 순간의 이벤트</b>. category + message만. 구간이 아니라 점.<br>
+      <span style="color:#8a93a3">질문: "이 <b>순간</b>에 무슨 일이 있었나?"</span><br>
+      <code style="color:#7aa7f5;font-size:11px">trace.Log(ctx, "cache", "miss")</code></p>
+    </div>
+  </div>
+
+</div>
+
+<table style="width:100%;margin-top:18px;border-collapse:collapse;font-size:13px;color:#cdd3df">
+  <tr style="color:#8a93a3;text-align:left"><th style="padding:6px">　</th><th>지속시간</th><th>범위</th></tr>
+  <tr style="border-top:1px solid #2a2e38"><td style="padding:6px"><b>region</b></td><td>구간 (시작~끝)</td><td>한 goroutine</td></tr>
+  <tr style="border-top:1px solid #2a2e38"><td style="padding:6px"><b>task</b></td><td>구간 (시작~끝)</td><td>여러 goroutine</td></tr>
+  <tr style="border-top:1px solid #2a2e38"><td style="padding:6px"><b>log</b></td><td>없음 (한 시점)</td><td>한 시점</td></tr>
+</table>

@@ -1,6 +1,6 @@
 import { makeTimeScale } from './timeMap'
 import { goroutineLabel, stateColor, type IntervalState } from './format'
-import type { TraceSummary } from './types'
+import type { TraceSummary, Log } from './types'
 
 export interface LayoutRect {
   x: number
@@ -10,48 +10,102 @@ export interface LayoutRect {
   blockReason: string
 }
 
+export interface RegionRect {
+  x: number
+  width: number
+  depth: number
+  name: string
+  start: number // real trace time (ns), for an accurate hover duration
+  end: number
+}
+
+export interface LogMarker {
+  x: number
+  category: string
+  message: string
+}
+
 export interface Lane {
   goroutineId: number
   label: string
   y: number
-  height: number
+  height: number // state row height (state intervals are drawn at this height)
+  totalHeight: number // state row + region rows
   rects: LayoutRect[]
+  regions: RegionRect[]
+  logs: LogMarker[]
 }
 
 export interface LayoutOptions {
   width: number // pixel width of the time axis
   laneHeight: number
   laneGap: number
-  gutter?: number // left offset reserved for lane labels; time axis starts here
+  gutter?: number // left offset reserved for lane labels
+  regionRowH?: number // height of one region sub-row (0/undefined => no region rows)
 }
 
-// layoutTimeline maps the whole trace span onto [0, width] and produces one
-// lane per goroutine. Each interval becomes a rect with a minimum width of 1px
-// so sub-pixel intervals stay visible.
+// layoutTimeline maps the trace span onto [gutter, width] and stacks one lane per
+// goroutine. A goroutine with regions grows by (maxDepth+1) region rows; others
+// stay at laneHeight. Region spans and the goroutine's logs are attached per lane.
 export function layoutTimeline(summary: TraceSummary, opts: LayoutOptions): Lane[] {
-  const scale = makeTimeScale(summary.startTime, summary.endTime, opts.gutter ?? 0, opts.width)
-  return summary.goroutines.map((g, i) => {
-    const rects: LayoutRect[] = g.intervals.map((iv) => {
-      // The parser always sets a real Interval.End (a state-transition time, or
-      // the trace end for still-open intervals); only Goroutine.endedAt uses the
-      // 0 "never ended" sentinel. So iv.end is used directly here. Goroutine
-      // lifetime (effectiveEnd) is a lane-level concern, not per-interval.
+  const gutter = opts.gutter ?? 0
+  const regionRowH = opts.regionRowH ?? 0
+  const scale = makeTimeScale(summary.startTime, summary.endTime, gutter, opts.width)
+
+  const logsByGo = new Map<number, Log[]>()
+  for (const lg of summary.logs ?? []) {
+    const arr = logsByGo.get(lg.goId)
+    if (arr) arr.push(lg)
+    else logsByGo.set(lg.goId, [lg])
+  }
+
+  const lanes: Lane[] = []
+  let y = 0
+  for (const g of summary.goroutines) {
+    const rects: LayoutRect[] = (g.intervals ?? []).map((iv) => {
       const x = scale.toPixel(iv.start)
-      const rawWidth = scale.toPixel(iv.end) - x
       return {
         x,
-        width: Math.max(1, rawWidth),
+        width: Math.max(1, scale.toPixel(iv.end) - x),
         state: iv.state,
         color: stateColor(iv.state),
         blockReason: iv.blockReason ?? '',
       }
     })
-    return {
+
+    const regs = g.regions ?? []
+    const regions: RegionRect[] = regs.map((r) => {
+      const x = scale.toPixel(r.start)
+      return {
+        x,
+        width: Math.max(1, scale.toPixel(r.end) - x),
+        depth: r.depth,
+        name: r.name,
+        start: r.start,
+        end: r.end,
+      }
+    })
+    const maxDepth = regs.reduce((m, r) => Math.max(m, r.depth), -1)
+    const regionRows = maxDepth + 1 // -1 => 0 rows when no regions
+    const totalHeight = opts.laneHeight + regionRows * regionRowH
+
+    const logs: LogMarker[] = (logsByGo.get(g.id) ?? []).map((lg) => ({
+      x: scale.toPixel(lg.time),
+      category: lg.category,
+      message: lg.message,
+    }))
+
+    lanes.push({
       goroutineId: g.id,
       label: goroutineLabel(g),
-      y: i * (opts.laneHeight + opts.laneGap),
+      y,
       height: opts.laneHeight,
+      totalHeight,
       rects,
-    }
-  })
+      regions,
+      logs,
+    })
+    y += totalHeight + opts.laneGap
+  }
+  return lanes
 }

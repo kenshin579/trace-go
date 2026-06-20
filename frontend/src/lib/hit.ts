@@ -1,27 +1,33 @@
-import type { Lane, LayoutRect } from './timelineLayout'
+import type { Lane, LayoutRect, RegionRect, LogMarker } from './timelineLayout'
 
-export interface TimelineHit {
-  lane: Lane
-  rect: LayoutRect | null
-}
+export type TimelineHit =
+  | { kind: 'interval'; lane: Lane; rect: LayoutRect }
+  | { kind: 'region'; lane: Lane; region: RegionRect }
+  | { kind: 'log'; lane: Lane; log: LogMarker }
+  | null
 
-// hitTimeline finds the lane (and the interval rect, if any) under a point in
-// timeline canvas coordinates. Returns null when the point is in the gap
-// between lanes or below the last lane.
-export function hitTimeline(
-  lanes: Lane[],
-  x: number,
-  y: number,
-  stride: number,
-  laneHeight: number,
-): TimelineHit | null {
-  if (y < 0) return null
-  const idx = Math.floor(y / stride)
-  if (idx < 0 || idx >= lanes.length) return null
-  const lane = lanes[idx]
-  if (y - lane.y > laneHeight) return null // in the inter-lane gap
-  const rect = lane.rects.find((r) => x >= r.x && x < r.x + r.width) ?? null
-  return { lane, rect }
+const LOG_HIT_PX = 5
+
+// hitTimeline finds what is under a point in timeline canvas coordinates, using
+// each lane's own y/totalHeight (lanes are variable-height). A log marker in the
+// state row wins over the interval beneath it; region rows sit below the state row.
+export function hitTimeline(lanes: Lane[], x: number, y: number, regionRowH: number): TimelineHit {
+  const lane = lanes.find((l) => y >= l.y && y < l.y + l.totalHeight)
+  if (!lane) return null
+  const localY = y - lane.y
+
+  if (localY < lane.height) {
+    // State row: a nearby log marker wins, else the interval under x.
+    const log = lane.logs.find((lg) => Math.abs(lg.x - x) <= LOG_HIT_PX)
+    if (log) return { kind: 'log', lane, log }
+    const rect = lane.rects.find((r) => x >= r.x && x < r.x + r.width)
+    return rect ? { kind: 'interval', lane, rect } : null
+  }
+
+  // Region rows below the state row.
+  const depth = Math.floor((localY - lane.height) / regionRowH)
+  const region = lane.regions.find((r) => r.depth === depth && x >= r.x && x < r.x + r.width)
+  return region ? { kind: 'region', lane, region } : null
 }
 
 // nodeAtPoint returns the first node whose center is within radius of the point.

@@ -29,6 +29,23 @@ type Interval struct {
 // Duration returns the length of the interval in raw trace units.
 func (iv Interval) Duration() Time { return iv.End - iv.Start }
 
+// Region is a named, nestable time span within a single goroutine, from a
+// runtime/trace.WithRegion/StartRegion call.
+type Region struct {
+	Start Time   `json:"start"`
+	End   Time   `json:"end"`
+	Name  string `json:"name"`  // the region type string passed to WithRegion
+	Depth int    `json:"depth"` // nesting depth, 0 = outermost
+}
+
+// Log is a point-in-time event from a runtime/trace.Log/Logf call.
+type Log struct {
+	Time     Time   `json:"time"`
+	GoID     int64  `json:"goId"`
+	Category string `json:"category"`
+	Message  string `json:"message"`
+}
+
 // Goroutine is one goroutine's full lifetime and timeline.
 type Goroutine struct {
 	ID        int64      `json:"id"`
@@ -36,6 +53,7 @@ type Goroutine struct {
 	CreatedAt Time       `json:"createdAt"`
 	EndedAt   Time       `json:"endedAt"` // 0 if it never ended within the trace
 	Intervals []Interval `json:"intervals"`
+	Regions   []Region   `json:"regions,omitempty"`
 }
 
 // EdgeCategory is the inferred synchronization mechanism behind a causal edge.
@@ -63,4 +81,5 @@ type TraceSummary struct {
 	EndTime    Time         `json:"endTime"`
 	Goroutines []Goroutine  `json:"goroutines"`
 	Edges      []CausalEdge `json:"edges"`
+	Logs       []Log        `json:"logs,omitempty"`
 }

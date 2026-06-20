@@ -2,6 +2,7 @@ package parse_test
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"runtime/trace"
 	"sync"
@@ -34,6 +35,17 @@ func scenarioSendRecv() {
 	go func() { defer wg.Done(); ch <- 42 }()
 	go func() { defer wg.Done(); <-ch }()
 	wg.Wait()
+}
+
+// scenarioRegionsLogs emits nested user regions and logs on the running goroutine.
+func scenarioRegionsLogs() {
+	ctx := context.Background()
+	trace.Log(ctx, "startup", "begin")
+	trace.WithRegion(ctx, "outer", func() {
+		trace.WithRegion(ctx, "inner", func() {
+			trace.Log(ctx, "work", "step")
+		})
+	})
 }
 
 // scenarioMutexContention: many goroutines contend for a single mutex,

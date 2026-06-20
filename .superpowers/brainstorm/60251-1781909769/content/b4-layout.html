@@ -1,0 +1,63 @@
+<h2>B4 제안 레이아웃 — regions / logs / tasks를 타임라인에 얹기</h2>
+<p class="subtitle">세 종류를 한 화면에 배치하는 안입니다. 보고 맞는지, 바꿀 부분을 알려주세요.</p>
+
+<div class="mockup">
+  <div class="mockup-header">타임라인 (제안)</div>
+  <div class="mockup-body" style="background:#0f1117;padding:14px;">
+    <svg viewBox="0 0 480 250" width="100%" height="250" font-family="system-ui">
+
+      <!-- TASKS track (top, cross-goroutine spans) -->
+      <text x="4" y="16" fill="#8a93a3" font-size="9">TASKS</text>
+      <rect x="70" y="8" width="300" height="12" rx="3" fill="#3b3357" stroke="#7a6bb0"/>
+      <text x="76" y="17" fill="#cdd3df" font-size="8">request #1</text>
+      <rect x="210" y="22" width="150" height="11" rx="3" fill="#33415a" stroke="#5b8def"/>
+      <text x="216" y="30" fill="#cdd3df" font-size="8">db-batch (sub-task)</text>
+
+      <line x1="0" y1="42" x2="480" y2="42" stroke="#2a2e38"/>
+
+      <!-- goroutine 1: state row + region sub-row + a log marker -->
+      <text x="4" y="58" fill="#cdd3df" font-size="9">main.handler</text>
+      <rect x="70" y="50" width="120" height="14" rx="2" fill="#4caf50"/>
+      <rect x="190" y="50" width="180" height="14" rx="2" fill="#c25450"/>
+      <!-- region sub-row (nested) -->
+      <rect x="74" y="66" width="110" height="8" rx="2" fill="#2f6f4f"/><text x="78" y="73" fill="#cdd3df" font-size="7">auth</text>
+      <rect x="120" y="66" width="50" height="8" rx="2" fill="#3a8a63"/><text x="124" y="73" fill="#0f1117" font-size="7">verify</text>
+      <rect x="200" y="66" width="150" height="8" rx="2" fill="#7a5a2f"/><text x="204" y="73" fill="#cdd3df" font-size="7">db-query</text>
+      <!-- log marker -->
+      <path d="M150 50 l4 4 l-4 4 l-4 -4 z" fill="#e0c030"/>
+
+      <line x1="0" y1="84" x2="480" y2="84" stroke="#161922"/>
+
+      <!-- goroutine 2 -->
+      <text x="4" y="100" fill="#cdd3df" font-size="9">main.worker</text>
+      <rect x="100" y="92" width="80" height="14" rx="2" fill="#4caf50"/>
+      <rect x="180" y="92" width="190" height="14" rx="2" fill="#c25450"/>
+      <rect x="104" y="108" width="70" height="8" rx="2" fill="#7a5a2f"/><text x="108" y="115" fill="#cdd3df" font-size="7">compute</text>
+      <path d="M260 92 l4 4 l-4 4 l-4 -4 z" fill="#e0c030"/>
+
+      <line x1="0" y1="126" x2="480" y2="126" stroke="#161922"/>
+
+      <!-- goroutine 3 -->
+      <text x="4" y="142" fill="#cdd3df" font-size="9">main.worker</text>
+      <rect x="120" y="134" width="60" height="14" rx="2" fill="#4caf50"/>
+      <rect x="180" y="134" width="190" height="14" rx="2" fill="#c25450"/>
+      <rect x="124" y="150" width="52" height="8" rx="2" fill="#7a5a2f"/><text x="128" y="157" fill="#cdd3df" font-size="7">compute</text>
+
+      <!-- legend hint -->
+      <text x="4" y="200" fill="#8a93a3" font-size="8">■ TASKS = 여러 goroutine에 걸친 논리 작업(상단 트랙, 중첩)</text>
+      <text x="4" y="214" fill="#8a93a3" font-size="8">■ region = goroutine 안 이름 붙은 구간(상태 바 아래 sub-row, 중첩=깊이)</text>
+      <text x="4" y="228" fill="#8a93a3" font-size="8">◆ log = 시점 이벤트(상태 바 위 마커, hover로 category·message)</text>
+    </svg>
+  </div>
+</div>
+
+<div class="options">
+  <div class="option" data-choice="ok" onclick="toggleSelect(this)">
+    <div class="letter">✓</div>
+    <div class="content"><h3>이 레이아웃 좋다</h3><p>tasks=상단 트랙 / region=상태바 아래 sub-row / log=마커</p></div>
+  </div>
+  <div class="option" data-choice="tweak" onclick="toggleSelect(this)">
+    <div class="letter">~</div>
+    <div class="content"><h3>방향은 맞는데 조정</h3><p>예: region 표시 위치/항상표시 vs hover, task 트랙 형태 등</p></div>
+  </div>
+</div>

@@ -13,17 +13,25 @@ import (
 	"github.com/kenshin579/trace-go/internal/model"
 )
 
+// openRegion is an in-progress region awaiting its EventRegionEnd.
+type openRegion struct {
+	name  string
+	start model.Time
+	depth int
+}
+
 // gobuilder accumulates the in-progress state for one goroutine. openStart and
 // the other bookkeeping fields live here (not on model.Goroutine) so they never
 // leak into the serialized output.
 type gobuilder struct {
-	g         model.Goroutine
-	created   bool
-	hasOpen   bool        // an interval is currently open
-	curState  model.State // state of the open interval
-	curReason string      // block reason of the open interval (if blocked)
-	lastWait  string      // reason of the most recent GoWaiting transition
-	openStart model.Time  // start time of the currently open interval
+	g           model.Goroutine
+	created     bool
+	hasOpen     bool        // an interval is currently open
+	curState    model.State // state of the open interval
+	curReason   string      // block reason of the open interval (if blocked)
+	lastWait    string      // reason of the most recent GoWaiting transition
+	openStart   model.Time  // start time of the currently open interval
+	regionStack []openRegion // in-progress (unclosed) regions for this goroutine
 }
 
 func (b *gobuilder) openAt(t model.Time) {
@@ -40,6 +48,7 @@ func Parse(r io.Reader) (*model.TraceSummary, error) {
 
 	builders := map[int64]*gobuilder{}
 	var edges []model.CausalEdge
+	var logs []model.Log
 	var minT, maxT model.Time
 	haveTime := false
 
@@ -71,6 +80,41 @@ func Parse(r io.Reader) (*model.TraceSummary, error) {
 			if now > maxT {
 				maxT = now
 			}
+		}
+
+		switch ev.Kind() {
+		case exptrace.EventRegionBegin:
+			gid := int64(ev.Goroutine())
+			if gid != int64(exptrace.NoGoroutine) {
+				b := get(gid)
+				b.regionStack = append(b.regionStack, openRegion{
+					name:  ev.Region().Type,
+					start: now,
+					depth: len(b.regionStack),
+				})
+			}
+			continue
+		case exptrace.EventRegionEnd:
+			gid := int64(ev.Goroutine())
+			if gid != int64(exptrace.NoGoroutine) {
+				b := get(gid)
+				if n := len(b.regionStack); n > 0 {
+					reg := b.regionStack[n-1]
+					b.regionStack = b.regionStack[:n-1]
+					b.g.Regions = append(b.g.Regions, model.Region{
+						Start: reg.start, End: now, Name: reg.name, Depth: reg.depth,
+					})
+				}
+			}
+			continue
+		case exptrace.EventLog:
+			// A log without a goroutine context keeps GoID == NoGoroutine; the
+			// frontend groups logs by GoID, so it simply won't attach to a lane.
+			lg := ev.Log()
+			logs = append(logs, model.Log{
+				Time: now, GoID: int64(ev.Goroutine()), Category: lg.Category, Message: lg.Message,
+			})
+			continue
 		}
 
 		if ev.Kind() != exptrace.EventStateTransition {
@@ -153,6 +197,18 @@ func Parse(r io.Reader) (*model.TraceSummary, error) {
 			b.g.Intervals = append(b.g.Intervals, iv)
 			b.hasOpen = false
 		}
+		for _, reg := range b.regionStack {
+			b.g.Regions = append(b.g.Regions, model.Region{
+				Start: reg.start, End: maxT, Name: reg.name, Depth: reg.depth,
+			})
+		}
+		b.regionStack = nil
+		sort.Slice(b.g.Regions, func(i, j int) bool {
+			if b.g.Regions[i].Start != b.g.Regions[j].Start {
+				return b.g.Regions[i].Start < b.g.Regions[j].Start
+			}
+			return b.g.Regions[i].Depth < b.g.Regions[j].Depth
+		})
 	}
 
 	gs := make([]model.Goroutine, 0, len(builders))
@@ -161,11 +217,13 @@ func Parse(r io.Reader) (*model.TraceSummary, error) {
 	}
 	sort.Slice(gs, func(i, j int) bool { return gs[i].ID < gs[j].ID })
 
+	sort.Slice(logs, func(i, j int) bool { return logs[i].Time < logs[j].Time })
 	return &model.TraceSummary{
 		StartTime:  minT,
 		EndTime:    maxT,
 		Goroutines: gs,
 		Edges:      edges,
+		Logs:       logs,
 	}, nil
 }
 

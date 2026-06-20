@@ -89,3 +89,57 @@ describe('layoutTimeline gutter', () => {
     expect(lanes[0].rects[0].x).toBe(0)
   })
 })
+
+describe('layoutTimeline regions and logs', () => {
+  const summary = {
+    startTime: 0,
+    endTime: 100,
+    goroutines: [
+      {
+        id: 1, name: 'a', createdAt: 0, endedAt: 100,
+        intervals: [{ start: 0, end: 100, state: 'running', blockReason: '' }],
+        regions: [
+          { start: 0, end: 60, name: 'outer', depth: 0 },
+          { start: 10, end: 40, name: 'inner', depth: 1 },
+        ],
+      },
+      {
+        id: 2, name: 'b', createdAt: 0, endedAt: 100,
+        intervals: [{ start: 0, end: 100, state: 'running', blockReason: '' }],
+      },
+    ],
+    logs: [{ time: 50, goId: 1, category: 'c', message: 'm' }],
+  } as any
+
+  const opts = { width: 200, laneHeight: 18, laneGap: 4, gutter: 0, regionRowH: 8 }
+
+  it('grows a lane with regions by (maxDepth+1) region rows, leaves others compact', () => {
+    const lanes = layoutTimeline(summary, opts)
+    // lane 0 has regions up to depth 1 -> 2 region rows: height = 18 + 2*8 = 34
+    expect(lanes[0].height).toBe(18) // state row height stays laneHeight
+    expect(lanes[0].totalHeight).toBe(34)
+    // lane 1 has no regions -> compact
+    expect(lanes[1].totalHeight).toBe(18)
+  })
+
+  it('stacks lanes by cumulative total height + gap', () => {
+    const lanes = layoutTimeline(summary, opts)
+    expect(lanes[0].y).toBe(0)
+    expect(lanes[1].y).toBe(34 + 4) // lane0 totalHeight + gap
+  })
+
+  it('maps region spans to x/width and carries depth + name', () => {
+    const lanes = layoutTimeline(summary, opts)
+    const inner = lanes[0].regions.find((r) => r.name === 'inner')!
+    expect(inner.depth).toBe(1)
+    expect(inner.x).toBe(20) // t=10 of span 100 over width 200
+    expect(inner.width).toBeCloseTo(60) // (40-10)/100 * 200
+  })
+
+  it('places log markers for the owning goroutine at the log time', () => {
+    const lanes = layoutTimeline(summary, opts)
+    expect(lanes[0].logs).toHaveLength(1)
+    expect(lanes[0].logs[0].x).toBe(100) // t=50 of span 100 over width 200
+    expect(lanes[1].logs).toHaveLength(0)
+  })
+})

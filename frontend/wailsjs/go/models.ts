@@ -18,6 +18,24 @@ export namespace model {
 	        this.category = source["category"];
 	    }
 	}
+	export class Region {
+	    start: number;
+	    end: number;
+	    name: string;
+	    depth: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new Region(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.start = source["start"];
+	        this.end = source["end"];
+	        this.name = source["name"];
+	        this.depth = source["depth"];
+	    }
+	}
 	export class Interval {
 	    start: number;
 	    end: number;
@@ -42,6 +60,7 @@ export namespace model {
 	    createdAt: number;
 	    endedAt: number;
 	    intervals: Interval[];
+	    regions?: Region[];
 	
 	    static createFrom(source: any = {}) {
 	        return new Goroutine(source);
@@ -54,6 +73,7 @@ export namespace model {
 	        this.createdAt = source["createdAt"];
 	        this.endedAt = source["endedAt"];
 	        this.intervals = this.convertValues(source["intervals"], Interval);
+	        this.regions = this.convertValues(source["regions"], Region);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -75,11 +95,31 @@ export namespace model {
 		}
 	}
 	
+	export class Log {
+	    time: number;
+	    goId: number;
+	    category: string;
+	    message: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Log(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.time = source["time"];
+	        this.goId = source["goId"];
+	        this.category = source["category"];
+	        this.message = source["message"];
+	    }
+	}
+	
 	export class TraceSummary {
 	    startTime: number;
 	    endTime: number;
 	    goroutines: Goroutine[];
 	    edges: CausalEdge[];
+	    logs?: Log[];
 	
 	    static createFrom(source: any = {}) {
 	        return new TraceSummary(source);
@@ -91,6 +131,7 @@ export namespace model {
 	        this.endTime = source["endTime"];
 	        this.goroutines = this.convertValues(source["goroutines"], Goroutine);
 	        this.edges = this.convertValues(source["edges"], CausalEdge);
+	        this.logs = this.convertValues(source["logs"], Log);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

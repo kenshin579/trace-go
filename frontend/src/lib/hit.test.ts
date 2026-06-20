@@ -2,37 +2,44 @@ import { describe, it, expect } from 'vitest'
 import { hitTimeline, nodeAtPoint, distToSegment } from './hit'
 import type { Lane } from './timelineLayout'
 
-const lanes: Lane[] = [
-  {
-    goroutineId: 1,
-    label: 'a',
-    y: 0,
-    height: 18,
-    rects: [
-      { x: 0, width: 40, state: 'running', color: '#0a0', blockReason: '' },
-      { x: 40, width: 60, state: 'blocked', color: '#a00', blockReason: 'chan receive' },
-    ],
-  },
-  { goroutineId: 2, label: 'b', y: 21, height: 18, rects: [{ x: 0, width: 100, state: 'running', color: '#0a0', blockReason: '' }] },
-]
+const laneA: Lane = {
+  goroutineId: 1, label: 'a', y: 0, height: 18, totalHeight: 26,
+  rects: [{ x: 0, width: 100, state: 'running', color: '#0a0', blockReason: '' }],
+  regions: [{ x: 10, width: 40, depth: 0, name: 'db', start: 100, end: 500 }],
+  logs: [{ x: 70, category: 'c', message: 'm' }],
+}
+const laneB: Lane = {
+  goroutineId: 2, label: 'b', y: 30, height: 18, totalHeight: 18,
+  rects: [{ x: 0, width: 100, state: 'running', color: '#0a0', blockReason: '' }],
+  regions: [], logs: [],
+}
+const lanes = [laneA, laneB]
 
 describe('hitTimeline', () => {
-  const stride = 21 // LANE_H 18 + LANE_GAP 3
-  it('finds the lane and the rect under the point', () => {
-    const h = hitTimeline(lanes, 50, 5, stride, 18)
-    expect(h?.lane.goroutineId).toBe(1)
-    expect(h?.rect?.blockReason).toBe('chan receive')
+  const RR = 8 // regionRowH
+
+  it('hits a state interval in the state row', () => {
+    const h = hitTimeline(lanes, 50, 5, RR)
+    expect(h?.kind).toBe('interval')
+    expect(h?.kind === 'interval' && h.rect.width).toBe(100)
   })
-  it('returns null in the inter-lane gap', () => {
-    expect(hitTimeline(lanes, 50, 19, stride, 18)).toBeNull() // y 18..21 is gap
+  it('hits a log marker near its x in the state row', () => {
+    const h = hitTimeline(lanes, 71, 4, RR)
+    expect(h?.kind).toBe('log')
+    expect(h?.kind === 'log' && h.log.message).toBe('m')
   })
-  it('returns null below all lanes', () => {
-    expect(hitTimeline(lanes, 50, 200, stride, 18)).toBeNull()
+  it('hits a region in the region row below the state row', () => {
+    const h = hitTimeline(lanes, 30, 22, RR) // y in [18, 26) -> depth 0 region row
+    expect(h?.kind).toBe('region')
+    expect(h?.kind === 'region' && h.region.name).toBe('db')
   })
-  it('returns the lane with a null rect when x is past its intervals', () => {
-    const h = hitTimeline(lanes, 500, 26, stride, 18) // lane 2, x beyond width
+  it('returns null in the gap between lanes', () => {
+    expect(hitTimeline(lanes, 50, 28, RR)).toBeNull() // y 26..30 is the gap
+  })
+  it('resolves the second lane by its own y range', () => {
+    const h = hitTimeline(lanes, 50, 35, RR)
+    expect(h?.kind).toBe('interval')
     expect(h?.lane.goroutineId).toBe(2)
-    expect(h?.rect).toBeNull()
   })
 })
 

@@ -24,3 +24,13 @@ export function edgeTooltip(category: EdgeCategory, fromLabel: string, toLabel: 
         : 'unblock'
   return `${fromLabel} → ${toLabel}\n${kind} (inferred)`
 }
+
+// regionTooltip shows a hovered region's name and its duration (ms, 3 decimals).
+export function regionTooltip(name: string, start: number, end: number): string {
+  return `${name}\n${((end - start) / 1e6).toFixed(3)} ms`
+}
+
+// logTooltip shows a hovered log's category and message on two lines.
+export function logTooltip(category: string, message: string): string {
+  return `${category}\n${message}`
+}
