@@ -5,7 +5,7 @@
   import { makeTimeScale } from '../lib/timeMap'
   import { visibleGoroutines } from '../lib/filter'
   import { hitTimeline } from '../lib/hit'
-  import { intervalTooltip } from '../lib/tooltip'
+  import { intervalTooltip, regionTooltip, logTooltip } from '../lib/tooltip'
 
   const { summary, playhead, showSystem, selectedId, setPlayhead } = traceStore
 
@@ -14,7 +14,10 @@
   let cssWidth = 800
   const LANE_H = 18
   const LANE_GAP = 3
-  const GUTTER_W = 120 // left column reserved for goroutine labels
+  const GUTTER_W = 120
+  const REGION_ROW_H = 9
+  const REGION_COLOR = '#5a6b8c'
+  const LOG_COLOR = '#e0c030'
 
   let dragging = false
   let tip: { text: string; x: number; y: number } | null = null
@@ -23,14 +26,15 @@
   $: lanes = $summary
     ? layoutTimeline(
         { ...$summary, goroutines: visible },
-        { width: cssWidth, laneHeight: LANE_H, laneGap: LANE_GAP, gutter: GUTTER_W },
+        { width: cssWidth, laneHeight: LANE_H, laneGap: LANE_GAP, gutter: GUTTER_W, regionRowH: REGION_ROW_H },
       )
     : ([] as Lane[])
-  $: cssHeight = Math.max(400, visible.length * (LANE_H + LANE_GAP))
+  $: cssHeight = lanes.length
+    ? Math.max(400, lanes[lanes.length - 1].y + lanes[lanes.length - 1].totalHeight)
+    : 400
 
   $: void [$playhead, lanes, cssWidth, cssHeight, $selectedId], draw()
 
-  // Truncate a label with an ellipsis so it fits in maxW pixels.
   function fitLabel(ctx: CanvasRenderingContext2D, text: string, maxW: number): string {
     if (ctx.measureText(text).width <= maxW) return text
     let s = text
@@ -52,6 +56,7 @@
     ctx.fillStyle = '#0f1117'
     ctx.fillRect(0, 0, cssWidth, cssHeight)
 
+    // State bars.
     for (const lane of lanes) {
       for (const r of lane.rects) {
         ctx.fillStyle = r.color
@@ -59,32 +64,62 @@
       }
     }
 
-    // Lane labels in the left gutter.
-    ctx.font = '11px system-ui, sans-serif'
+    // Region sub-rows.
+    ctx.font = '9px system-ui, sans-serif'
     ctx.textBaseline = 'middle'
+    for (const lane of lanes) {
+      for (const reg of lane.regions) {
+        const ry = lane.y + lane.height + reg.depth * REGION_ROW_H
+        ctx.fillStyle = REGION_COLOR
+        ctx.fillRect(reg.x, ry + 1, reg.width, REGION_ROW_H - 2)
+        if (reg.width > 14) {
+          ctx.fillStyle = '#e6ebf2'
+          ctx.fillText(fitLabel(ctx, reg.name, reg.width - 4), reg.x + 3, ry + REGION_ROW_H / 2)
+        }
+      }
+    }
+
+    // Log markers (small diamonds on the top edge of the state row).
+    for (const lane of lanes) {
+      for (const lg of lane.logs) {
+        const my = lane.y + 4
+        ctx.fillStyle = LOG_COLOR
+        ctx.beginPath()
+        ctx.moveTo(lg.x, my - 3)
+        ctx.lineTo(lg.x + 3, my)
+        ctx.lineTo(lg.x, my + 3)
+        ctx.lineTo(lg.x - 3, my)
+        ctx.closePath()
+        ctx.fill()
+      }
+    }
+
+    // Lane labels in the gutter.
+    ctx.font = '11px system-ui, sans-serif'
     ctx.fillStyle = '#cdd3df'
     for (const lane of lanes) {
       ctx.fillText(fitLabel(ctx, lane.label, GUTTER_W - 10), 4, lane.y + lane.height / 2)
     }
 
-    const lanesBottom = lanes.length * (LANE_H + LANE_GAP)
-
+    // Selected lane outline (full lane incl. region rows).
     for (const lane of lanes) {
       if (lane.goroutineId === $selectedId) {
         ctx.strokeStyle = '#ffffff'
         ctx.lineWidth = 1.5
-        ctx.strokeRect(GUTTER_W + 0.5, lane.y + 0.5, cssWidth - GUTTER_W - 1, lane.height - 1)
+        ctx.strokeRect(GUTTER_W + 0.5, lane.y + 0.5, cssWidth - GUTTER_W - 1, lane.totalHeight - 1)
       }
     }
 
-    if ($summary) {
+    // Playhead.
+    if ($summary && lanes.length) {
       const scale = makeTimeScale($summary.startTime, $summary.endTime, GUTTER_W, cssWidth)
       const x = scale.toPixel($playhead)
+      const bottom = lanes[lanes.length - 1].y + lanes[lanes.length - 1].totalHeight
       ctx.strokeStyle = '#5b8def'
       ctx.lineWidth = 2
       ctx.beginPath()
       ctx.moveTo(x, 0)
-      ctx.lineTo(x, Math.max(lanesBottom, 1))
+      ctx.lineTo(x, bottom)
       ctx.stroke()
     }
   }
@@ -93,7 +128,7 @@
     if (!$summary) return 0
     const rect = canvas.getBoundingClientRect()
     const scale = makeTimeScale($summary.startTime, $summary.endTime, GUTTER_W, cssWidth)
-    return scale.toTime(clientX - rect.left) // store clamps to [startTime,endTime]
+    return scale.toTime(clientX - rect.left)
   }
 
   function onPointerDown(e: PointerEvent) {
@@ -109,11 +144,15 @@
     const rect = canvas.getBoundingClientRect()
     const x = e.clientX - rect.left
     const y = e.clientY - rect.top
-    const h = hitTimeline(lanes, x, y, LANE_H + LANE_GAP, LANE_H)
-    if (h && h.rect) {
-      tip = { text: intervalTooltip(h.lane.label, h.rect.state, h.rect.blockReason), x, y }
-    } else {
+    const h = hitTimeline(lanes, x, y, REGION_ROW_H)
+    if (!h) {
       tip = null
+    } else if (h.kind === 'interval') {
+      tip = { text: intervalTooltip(h.lane.label, h.rect.state, h.rect.blockReason), x, y }
+    } else if (h.kind === 'region') {
+      tip = { text: regionTooltip(h.region.name, h.region.start, h.region.end), x, y }
+    } else {
+      tip = { text: logTooltip(h.log.category, h.log.message), x, y }
     }
   }
   function onPointerLeave() {
