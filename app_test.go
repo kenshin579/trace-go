@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime/trace"
+	"strings"
 	"sync"
 	"testing"
 )
@@ -48,7 +49,26 @@ func TestOpenTraceReturnsSummary(t *testing.T) {
 
 func TestOpenTraceMissingFileErrors(t *testing.T) {
 	app := NewApp()
-	if _, err := app.OpenTrace("/no/such/trace.out"); err == nil {
+	_, err := app.OpenTrace("/no/such/trace.out")
+	if err == nil {
 		t.Fatal("expected an error opening a missing file")
+	}
+	if got := err.Error(); got != "Can't find that file — it may have been moved or deleted." {
+		t.Fatalf("unfriendly missing-file error: %q", got)
+	}
+}
+
+func TestOpenTraceNotATraceErrors(t *testing.T) {
+	app := NewApp()
+	path := filepath.Join(t.TempDir(), "garbage.out")
+	if err := os.WriteFile(path, []byte("not a trace"), 0o600); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
+	_, err := app.OpenTrace(path)
+	if err == nil {
+		t.Fatal("expected an error opening a non-trace file")
+	}
+	if !strings.Contains(err.Error(), "isn't a Go execution trace") {
+		t.Fatalf("unfriendly not-a-trace error: %q", err.Error())
 	}
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"os"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -26,13 +27,18 @@ func (a *App) startup(ctx context.Context) {
 }
 
 // OpenTrace parses the execution trace at path into a rendering-ready summary.
+// Open/parse failures are mapped to short, user-facing messages.
 func (a *App) OpenTrace(path string) (*model.TraceSummary, error) {
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, err
+		return nil, errors.New(classifyOpenError(err))
 	}
 	defer f.Close()
-	return parse.Parse(f)
+	sum, err := parse.Parse(f)
+	if err != nil {
+		return nil, errors.New(classifyOpenError(err))
+	}
+	return sum, nil
 }
 
 // OpenTraceDialog shows a native file picker and parses the chosen trace.
