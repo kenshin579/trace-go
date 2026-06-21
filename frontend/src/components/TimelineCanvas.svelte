@@ -1,7 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import { traceStore } from '../stores/trace'
-  import { layoutTimeline, type Lane } from '../lib/timelineLayout'
+  import { layoutTimelineRows, hitGroupHeader, type TimelineRow, type Lane } from '../lib/timelineLayout'
+  import { groupGoroutines } from '../lib/grouping'
   import { layoutTaskTrack, type TaskBar } from '../lib/taskTrack'
   import { makeTimeScale } from '../lib/timeMap'
   import { visibleGoroutines } from '../lib/filter'
@@ -10,7 +11,7 @@
   import { taskColor } from '../lib/format'
   import { causalNeighbors } from '../lib/causalFocus'
 
-  const { summary, playhead, showSystem, selectedId, setPlayhead } = traceStore
+  const { summary, playhead, showSystem, selectedId, setPlayhead, collapsedGroups, toggleGroup } = traceStore
 
   let container: HTMLDivElement
   let canvas: HTMLCanvasElement
@@ -22,6 +23,7 @@
   const REGION_COLOR = '#5a6b8c'
   const LOG_COLOR = '#e0c030'
   const TASK_ROW_H = 14
+  const GROUP_HEADER_BG = '#1b2130'
   const GHOST_ALPHA = 0.15
 
   let dragging = false
@@ -33,19 +35,23 @@
         width: cssWidth, gutter: GUTTER_W, startTime: $summary.startTime, endTime: $summary.endTime, taskRowH: TASK_ROW_H,
       })
     : { bars: [] as TaskBar[], height: 0 }
-  $: lanes = $summary
-    ? layoutTimeline(
+  $: rows = $summary
+    ? layoutTimelineRows(
         { ...$summary, goroutines: visible },
+        groupGoroutines(visible),
+        $collapsedGroups,
         { width: cssWidth, laneHeight: LANE_H, laneGap: LANE_GAP, gutter: GUTTER_W, regionRowH: REGION_ROW_H, topOffset: taskTrack.height },
       )
-    : ([] as Lane[])
-  $: cssHeight = lanes.length
-    ? Math.max(400, lanes[lanes.length - 1].y + lanes[lanes.length - 1].totalHeight)
+    : ([] as TimelineRow[])
+  $: lanes = rows.filter((r): r is { kind: 'lane' } & Lane => r.kind === 'lane')
+  $: headers = rows.filter((r) => r.kind === 'header') as Extract<TimelineRow, { kind: 'header' }>[]
+  $: cssHeight = rows.length
+    ? Math.max(400, (() => { const last = rows[rows.length - 1]; return last.kind === 'lane' ? last.y + last.totalHeight : last.y + last.height })())
     : 400
 
   $: chain = $summary && $selectedId !== null ? causalNeighbors($summary.edges, $selectedId) : null
 
-  $: void [$playhead, lanes, cssWidth, cssHeight, $selectedId, taskTrack], draw()
+  $: void [$playhead, lanes, headers, cssWidth, cssHeight, $selectedId, taskTrack], draw()
 
   function fitLabel(ctx: CanvasRenderingContext2D, text: string, maxW: number): string {
     if (ctx.measureText(text).width <= maxW) return text
@@ -88,6 +94,16 @@
 
     // In focus mode, lanes whose goroutine is not in the selected chain are ghosted.
     const laneAlpha = (gid: number) => (chain && !chain.has(gid) ? GHOST_ALPHA : 1)
+
+    // Group header rows: a disclosure triangle + "name ×count" on a faint band.
+    ctx.textBaseline = 'middle'
+    ctx.font = '11px system-ui, sans-serif'
+    for (const h of headers) {
+      ctx.fillStyle = GROUP_HEADER_BG
+      ctx.fillRect(0, h.y, cssWidth, h.height)
+      ctx.fillStyle = '#cdd3df'
+      ctx.fillText(`${h.collapsed ? '▸' : '▾'} ${h.name} ×${h.count}`, 6, h.y + h.height / 2)
+    }
 
     // State bars.
     for (const lane of lanes) {
@@ -170,6 +186,12 @@
   }
 
   function onPointerDown(e: PointerEvent) {
+    const rect = canvas.getBoundingClientRect()
+    const key = hitGroupHeader(rows, e.clientY - rect.top)
+    if (key !== null) {
+      toggleGroup(key)
+      return // header click toggles collapse; do not scrub the playhead
+    }
     dragging = true
     setPlayhead(timeAtClientX(e.clientX))
   }

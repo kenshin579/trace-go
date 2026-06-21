@@ -53,27 +53,8 @@ export type TimelineRow =
   | ({ kind: 'lane' } & Lane)
   | { kind: 'header'; key: string; name: string; count: number; collapsed: boolean; y: number; height: number }
 
-// layoutTimeline maps the trace span onto [gutter, width] and stacks one lane per
-// goroutine. A goroutine with regions grows by (maxDepth+1) region rows; others
-// stay at laneHeight. Region spans and the goroutine's logs are attached per lane.
-export function layoutTimeline(summary: TraceSummary, opts: LayoutOptions): Lane[] {
-  const gutter = opts.gutter ?? 0
-  const regionRowH = opts.regionRowH ?? 0
-  const scale = makeTimeScale(summary.startTime, summary.endTime, gutter, opts.width)
-  const logsByGo = buildLogsByGo(summary)
-  const lanes: Lane[] = []
-  let y = opts.topOffset ?? 0
-  for (const g of summary.goroutines) {
-    const lane = buildLane(g, scale, regionRowH, opts.laneHeight, logsByGo, y)
-    lanes.push(lane)
-    y += lane.totalHeight + opts.laneGap
-  }
-  return lanes
-}
-
 // buildLane constructs a single goroutine's Lane at vertical offset y, using a
-// pre-built time scale and a logs-by-goroutine map. Shared by layoutTimeline and
-// layoutTimelineRows so lane geometry stays identical between them.
+// pre-built time scale and a logs-by-goroutine map. Used by layoutTimelineRows.
 function buildLane(
   g: Goroutine,
   scale: ReturnType<typeof makeTimeScale>,
@@ -121,7 +102,7 @@ function buildLogsByGo(summary: TraceSummary): Map<number, Log[]> {
 // layoutTimelineRows lays out grouped goroutines as an ordered row list: a real
 // group (>=2 members) gets a header row, followed by its member lanes unless the
 // group key is in collapsedKeys; a solo group (1 member) becomes a bare lane row.
-// Lane geometry matches layoutTimeline exactly (shared buildLane).
+// Lane geometry is built by the shared buildLane helper.
 export function layoutTimelineRows(
   summary: TraceSummary,
   groups: GoroutineGroup[],
