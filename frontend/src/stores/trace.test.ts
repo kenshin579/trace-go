@@ -142,3 +142,22 @@ describe('createTraceStore selection', () => {
     expect(get(s.selectedId)).toBe(9)
   })
 })
+
+describe('collapsedGroups', () => {
+  it('toggles a group key on and off', () => {
+    const store = createTraceStore()
+    expect(get(store.collapsedGroups).has('main.w')).toBe(false)
+    store.toggleGroup('main.w')
+    expect(get(store.collapsedGroups).has('main.w')).toBe(true)
+    store.toggleGroup('main.w')
+    expect(get(store.collapsedGroups).has('main.w')).toBe(false)
+  })
+
+  it('resets collapsed groups when a new trace loads', () => {
+    const store = createTraceStore()
+    store.toggleGroup('main.w')
+    expect(get(store.collapsedGroups).size).toBe(1)
+    store.loadSummary({ startTime: 0, endTime: 10, goroutines: [], edges: [] })
+    expect(get(store.collapsedGroups).size).toBe(0)
+  })
+})

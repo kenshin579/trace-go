@@ -12,6 +12,7 @@ export interface TraceStore {
   speed: Writable<number>
   showSystem: Writable<boolean>
   selectedId: Writable<number | null>
+  collapsedGroups: Writable<Set<string>>
   loadSummary(s: TraceSummary): void
   setPlayhead(t: number): void
   play(): void
@@ -22,6 +23,7 @@ export interface TraceStore {
   advance(dtMs: number): void
   setSelected(id: number | null): void
   toggleSelected(id: number): void
+  toggleGroup(key: string): void
 }
 
 // createTraceStore holds the loaded trace, the playhead, and playback/filter
@@ -35,6 +37,7 @@ export function createTraceStore(): TraceStore {
   const speed = writable<number>(1)
   const showSystem = writable<boolean>(false)
   const selectedId = writable<number | null>(null)
+  const collapsedGroups = writable<Set<string>>(new Set())
   let current: TraceSummary | null = null
   let rafId = 0
   let lastFrame = 0
@@ -67,11 +70,13 @@ export function createTraceStore(): TraceStore {
     speed,
     showSystem,
     selectedId,
+    collapsedGroups,
     loadSummary(s) {
       current = s
       summary.set(s)
       playhead.set(s.startTime)
       api.pause()
+      collapsedGroups.set(new Set())
     },
     setPlayhead(t) {
       clampSet(t)
@@ -104,6 +109,14 @@ export function createTraceStore(): TraceStore {
     },
     toggleSelected(id) {
       selectedId.update((cur) => (cur === id ? null : id))
+    },
+    toggleGroup(key) {
+      collapsedGroups.update((cur) => {
+        const next = new Set(cur)
+        if (next.has(key)) next.delete(key)
+        else next.add(key)
+        return next
+      })
     },
     advance(dtMs) {
       if (!current) return
