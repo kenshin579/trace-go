@@ -46,6 +46,7 @@ export interface LayoutOptions {
   topOffset?: number // reserved space above the first lane (e.g. a task track)
 }
 
+/** Height of a group-header row in device-independent pixels (~1rem text). */
 export const GROUP_HEADER_H = 16
 
 export type TimelineRow =
