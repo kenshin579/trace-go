@@ -12,7 +12,7 @@
   } from 'd3-force'
   import { traceStore } from '../stores/trace'
   import { visibleGoroutines } from '../lib/filter'
-  import { buildGraphModel, type GraphNode, type GraphLink } from '../lib/graphModel'
+  import type { GraphNode, GraphLink } from '../lib/graphModel'
   import { stateAt, activeEdges } from '../lib/activeAt'
   import { stateColor, DIM_COLOR, categoryColor, goroutineLabel, taskColor } from '../lib/format'
   import { clusterByTask, convexHull } from '../lib/graphCluster'
@@ -21,19 +21,23 @@
   import { nodeAtPoint, distToSegment } from '../lib/hit'
   import { nodeTooltip, edgeTooltip } from '../lib/tooltip'
   import { causalNeighbors } from '../lib/causalFocus'
+  import { collapseGraph } from '../lib/graphCollapse'
+  import { groupGoroutines } from '../lib/grouping'
 
-  const { summary, playhead, showSystem, selectedId } = traceStore
+  const { summary, playhead, showSystem, selectedId, collapsedGroups, toggleGroup } = traceStore
 
   let container: HTMLDivElement
   let canvas: HTMLCanvasElement
   let cssWidth = 600
   let cssHeight = 360
   const GHOST_ALPHA = 0.15
+  const GROUP_NODE_COLOR = '#7a8290'
 
   let nodes: GraphNode[] = []
   let links: GraphLink[] = []
   let goroutineById = new Map<number, Goroutine>()
   let nodeById = new Map<number, GraphNode>()
+  let remap = new Map<number, number>()
   let clusterSeeds = new Map<number, { x: number; y: number }>()
   let sim: Simulation<GraphNode, GraphLink> | undefined
   let tip: { text: string; x: number; y: number } | null = null
@@ -46,17 +50,19 @@
 
   // Rebuild the graph + simulation ONLY when the visible node set changes
   // (summary or filter) — never on playhead, so the layout stays stable.
-  $: rebuild($summary ? visibleGoroutines($summary, $showSystem) : [], $summary?.edges ?? [])
+  $: rebuild($summary ? visibleGoroutines($summary, $showSystem) : [], $summary?.edges ?? [], $collapsedGroups)
 
-  function rebuild(goroutines: Goroutine[], edges: CausalEdge[]) {
+  function rebuild(goroutines: Goroutine[], edges: CausalEdge[], collapsedKeys: Set<string>) {
     goroutineById = new Map(goroutines.map((g) => [g.id, g]))
-    const model = buildGraphModel(goroutines, edges)
-    nodes = model.nodes
-    links = model.links
+    const collapsed = collapseGraph(goroutines, edges, groupGoroutines(goroutines), collapsedKeys)
+    nodes = collapsed.nodes
+    links = collapsed.links
+    remap = collapsed.remap
     nodeById = new Map(nodes.map((n) => [n.id, n]))
     const known = new Set(($summary?.tasks ?? []).map((t) => t.id))
     const clusters = clusterByTask(goroutines, known)
-    for (const n of nodes) n.cluster = clusters.get(n.id)
+    // Cluster only individual nodes; super-nodes carry no task cluster (excluded from hulls).
+    for (const n of nodes) n.cluster = n.group ? undefined : clusters.get(n.id)
     const clusterIds = [...new Set([...clusters.values()])]
     clusterSeeds = new Map()
     clusterIds.forEach((cid, i) => {
@@ -91,9 +97,9 @@
     if (t > prevT && $summary) {
       for (const e of edgesCrossed($summary.edges, prevT, t)) {
         if (comets.length >= MAX_PARTICLES) break
-        const a = nodeById.get(e.from)
-        const b = nodeById.get(e.to)
-        if (!a || !b) continue
+        const a = nodeById.get(remap.get(e.from) ?? e.from)
+        const b = nodeById.get(remap.get(e.to) ?? e.to)
+        if (!a || !b || a === b) continue // skip if either endpoint is hidden or both fold into one super-node
         comets.push({ from: a, to: b, color: categoryColor(e.category), start: performance.now() })
       }
       if (comets.length) ensureAnim()
@@ -203,21 +209,37 @@
     }
     ctx.globalAlpha = 1
 
-    // Nodes. In focus mode, non-chain nodes are ghosted; chain nodes keep their
-    // state-at-t color and the selected node keeps its ring.
+    // Nodes. Super-nodes (collapsed groups) draw in a fixed neutral color with a
+    // ring + label; individual nodes keep their state-at-t color. In focus mode a
+    // super-node stays bright if any member is in the chain.
     for (const n of nodes) {
       if (n.x == null) continue
-      const g = goroutineById.get(n.id)
-      const st = g ? stateAt(g, t) : null
-      ctx.globalAlpha = chain && !chain.has(n.id) ? GHOST_ALPHA : 1
-      ctx.fillStyle = st ? stateColor(st) : DIM_COLOR // dim if not alive at t
-      ctx.beginPath()
-      ctx.arc(n.x, n.y!, 9, 0, Math.PI * 2)
-      ctx.fill()
-      if (n.id === $selectedId) {
+      const inChain = !chain ? true : n.group ? n.group.memberIds.some((id) => chain.has(id)) : chain.has(n.id)
+      ctx.globalAlpha = inChain ? 1 : GHOST_ALPHA
+      if (n.group) {
+        ctx.fillStyle = GROUP_NODE_COLOR
+        ctx.beginPath()
+        ctx.arc(n.x, n.y!, 9, 0, Math.PI * 2)
+        ctx.fill()
         ctx.strokeStyle = '#ffffff'
-        ctx.lineWidth = 2
+        ctx.lineWidth = 1.5
         ctx.stroke()
+        ctx.fillStyle = '#cdd3df'
+        ctx.font = '10px system-ui, sans-serif'
+        ctx.textBaseline = 'middle'
+        ctx.fillText(n.label, n.x + 12, n.y!)
+      } else {
+        const g = goroutineById.get(n.id)
+        const st = g ? stateAt(g, t) : null
+        ctx.fillStyle = st ? stateColor(st) : DIM_COLOR // dim if not alive at t
+        ctx.beginPath()
+        ctx.arc(n.x, n.y!, 9, 0, Math.PI * 2)
+        ctx.fill()
+        if (n.id === $selectedId) {
+          ctx.strokeStyle = '#ffffff'
+          ctx.lineWidth = 2
+          ctx.stroke()
+        }
       }
     }
     ctx.globalAlpha = 1
@@ -265,7 +287,9 @@
   function onClick(e: MouseEvent) {
     const rect = canvas.getBoundingClientRect()
     const n = nodeAtPoint(nodes, e.clientX - rect.left, e.clientY - rect.top, 10)
-    if (n) traceStore.toggleSelected(n.id)
+    if (!n) return
+    if (n.group) toggleGroup(n.group.key) // clicking a super-node expands the group
+    else traceStore.toggleSelected(n.id)
   }
   function onPointerMove(e: PointerEvent) {
     const rect = canvas.getBoundingClientRect()
@@ -273,8 +297,12 @@
     const py = e.clientY - rect.top
     const n = nodeAtPoint(nodes, px, py, 10)
     if (n) {
-      const g = goroutineById.get(n.id)
-      tip = { text: nodeTooltip(n.label, g ? stateAt(g, $playhead) : null), x: px, y: py }
+      if (n.group) {
+        tip = { text: n.label, x: px, y: py }
+      } else {
+        const g = goroutineById.get(n.id)
+        tip = { text: nodeTooltip(n.label, g ? stateAt(g, $playhead) : null), x: px, y: py }
+      }
       return
     }
     let best: { l: GraphLink; d: number } | null = null

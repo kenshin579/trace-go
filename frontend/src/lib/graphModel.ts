@@ -11,6 +11,8 @@ export interface GraphNode {
   vx?: number
   vy?: number
   cluster?: number // task id this node is statically grouped under (set by the view)
+  // Set on a super-node (a collapsed goroutine group); absent on individual nodes.
+  group?: { key: string; name: string; count: number; memberIds: number[] }
 }
 
 export interface GraphLink {
